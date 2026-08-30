@@ -10,7 +10,7 @@ cp .env.example .env
 npm start
 ```
 
-Open `http://localhost:3000`. Without `DATABASE_URL`, development records are stored in `data/runtime.json`. Set a PostgreSQL connection string for durable production storage.
+Open `http://localhost:3000`. Without `MONGODB_URI`, development records are stored in `data/runtime.json`. Set a MongoDB Atlas connection string for durable production storage.
 
 ## API
 
@@ -32,12 +32,12 @@ curl -X POST http://localhost:3000/api/faults \
 
 ## Free deployment
 
-Recommended architecture: Render web service + Neon PostgreSQL.
+Recommended architecture: a Node web service + MongoDB Atlas.
 
-1. Create a free Neon database and copy its pooled connection string.
+1. Create a free MongoDB Atlas cluster and copy its application connection string.
 2. In Render, create a Blueprint from this repository. Render reads `render.yaml`.
-3. Enter the Neon string as `DATABASE_URL`. Render generates `DEVICE_API_KEY`.
+3. Enter the Atlas string as `MONGODB_URI`. Render generates `DEVICE_API_KEY`.
 4. Deploy, then verify `https://YOUR-SERVICE.onrender.com/api/health`.
 5. Copy the generated `DEVICE_API_KEY` into the IoT gateway configuration; never put it in frontend JavaScript.
 
-The server creates the required PostgreSQL tables on first boot.
+The server creates the required MongoDB collections and indexes on first boot.
