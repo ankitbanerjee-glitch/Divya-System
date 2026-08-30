@@ -1,50 +1,43 @@
-<<<<<<< HEAD
-# Divya-System
-Developed DIVYA', an IoT-enabled fault detection system for Overhead low-voltage grid, utilizing Arduino and LoRa to achieve real-time, long-range wireless monitoring Designed dual-node architecture Child/Parent) integrating ZMPT101B voltage sensors and motorized MCCBs to automatically isolate broken lines and prevent electrocution hazards.
-=======
-# Power Grid Fault Detection System
+# DIVYA System
 
-A premium-styled industrial IoT dashboard that visualises power-grid modules on Google Maps, highlights faults in real-time and notifies the nearest engineer.
+DIVYA is an IoT-enabled overhead low-voltage grid fault monitoring system. The console receives device telemetry, updates operators in real time, and stores work orders, support tickets, dispatches, and fault history.
 
-## Quick Start
-
-1. Install dependencies
+## Run locally
 
 ```bash
-cd "C:/Projects/Divya System"
 npm install
-```
-
-2. Configure Google Maps
-
-Copy `.env.example` to `.env` and replace `YOUR_GOOGLE_MAPS_API_KEY` with a valid key.
-
-3. Start the server
-
-```bash
+cp .env.example .env
 npm start
 ```
 
-4. Open the dashboard
+Open `http://localhost:3000`. Without `DATABASE_URL`, development records are stored in `data/runtime.json`. Set a PostgreSQL connection string for durable production storage.
 
-Visit http://localhost:3000 in a browser.
+## API
 
-5. Test a fault
+- `GET /api/health`
+- `GET /api/events`
+- `POST /api/faults` (send `x-device-api-key` when `DEVICE_API_KEY` is configured)
+- `GET|POST /api/work-orders`
+- `GET|POST /api/tickets`
+- `GET|POST /api/dispatches`
+
+Example device report:
 
 ```bash
-curl -X POST http://localhost:3000/report-fault \
+curl -X POST http://localhost:3000/api/faults \
   -H "Content-Type: application/json" \
-  -d '{"ip":"192.168.1.12"}'
+  -H "x-device-api-key: YOUR_DEVICE_API_KEY" \
+  -d '{"moduleId":"ESP-01-01","ip":"192.168.1.12","voltage":0,"severity":"critical"}'
 ```
 
-You should see the red marker appear, the alert banner show, and the console log the nearest engineer.
+## Free deployment
 
-## Extending the System
+Recommended architecture: Render web service + Neon PostgreSQL.
 
-- MQTT – add the `mqtt` npm package, subscribe to `grid/faults`, and forward messages to `io.emit('fault_event', ...)`.
-- Database – replace `data/*.json` with a MongoDB or PostgreSQL backend; update `server.js` to expose an API.
-- Docker – a `Dockerfile` + `docker-compose.yml` can be added for containerised deployment.
-- Authentication – protect `/report-fault` with an API key or JWT if desired.
+1. Create a free Neon database and copy its pooled connection string.
+2. In Render, create a Blueprint from this repository. Render reads `render.yaml`.
+3. Enter the Neon string as `DATABASE_URL`. Render generates `DEVICE_API_KEY`.
+4. Deploy, then verify `https://YOUR-SERVICE.onrender.com/api/health`.
+5. Copy the generated `DEVICE_API_KEY` into the IoT gateway configuration; never put it in frontend JavaScript.
 
-If you'd like any of the optional extensions (MQTT, DB, Docker), tell me which and I'll add them.
->>>>>>> 03ba5f0 (Initial commit)
+The server creates the required PostgreSQL tables on first boot.

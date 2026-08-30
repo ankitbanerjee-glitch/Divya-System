@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <style>
   :root{
     --bg:#070b10;
@@ -1606,7 +1607,7 @@ document.getElementById('modal-close-btn').addEventListener('click', closeDispat
 document.getElementById('modal-cancel-btn').addEventListener('click', closeDispatchModal);
 dispatchBackdrop.addEventListener('click', (e)=>{ if(e.target === dispatchBackdrop) closeDispatchModal(); });
  
-document.getElementById('modal-authorize-btn').addEventListener('click', ()=>{
+document.getElementById('modal-authorize-btn').addEventListener('click', async ()=>{
   if(!dispatchNameInput.value.trim()){
     dispatchNameField.classList.add('error');
     dispatchNameInput.focus();
@@ -1614,6 +1615,15 @@ document.getElementById('modal-authorize-btn').addEventListener('click', ()=>{
   }
   const mod = getSelectedModule();
   const dispatcherName = dispatchNameInput.value.trim();
+  const response = await fetch('/api/dispatches', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ networkId:mod.code, dispatcher:dispatcherName, memo:dispatchMemoInput.value.trim() })
+  }).catch(()=>null);
+  if(!response || !response.ok){
+    dispatchNameField.classList.add('error');
+    document.getElementById('modal-desc').textContent = 'Dispatch could not be saved. Check the server connection and try again.';
+    return;
+  }
   const today = new Date();
   mod.lastMaint = today;
   mod.nextMaint = new Date(today.getTime() + 90*86400000);
@@ -1928,7 +1938,7 @@ function renderLpQueue(){
   });
 }
  
-function lpSubmitWorkOrder(){
+async function lpSubmitWorkOrder(){
   const networkId = document.getElementById('wo-network-id').value.trim();
   const type = document.getElementById('wo-type').value;
   const date = document.getElementById('wo-date').value;
@@ -1940,8 +1950,21 @@ function lpSubmitWorkOrder(){
     msgEl.textContent = '✕ Please fill all required fields (marked *) before dispatching.';
     return;
   }
+  msgEl.className = 'lp-form-msg';
+  msgEl.textContent = 'Submitting work order…';
+  const response = await fetch('/api/work-orders', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ networkId, type, scheduledDate:date, technician:tech, notes:document.getElementById('wo-notes').value.trim() })
+  }).catch(()=>null);
+  if(!response || !response.ok){
+    const detail = response ? await response.json().catch(()=>({})) : {};
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = `✕ ${detail.error || 'Could not reach the server. Please try again.'}`;
+    return;
+  }
+  const order = await response.json();
   msgEl.className = 'lp-form-msg ok';
-  msgEl.textContent = `✓ Work order authorized for ${networkId} — ${type} scheduled ${date}, assigned to ${tech}.`;
+  msgEl.textContent = `✓ Work order ${order.id.slice(0,8)} authorized for ${networkId} — ${type} scheduled ${date}, assigned to ${tech}.`;
   document.getElementById('wo-network-id').value = '';
   document.getElementById('wo-type').value = '';
   document.getElementById('wo-date').value = '';
@@ -2246,7 +2269,7 @@ function supInitControls(){
   document.getElementById('tk-submit-btn').addEventListener('click', supSubmitTicket);
 }
  
-function supSubmitTicket(){
+async function supSubmitTicket(){
   const subject = document.getElementById('tk-subject').value.trim();
   const category = document.getElementById('tk-category').value;
   const priority = document.getElementById('tk-priority').value;
@@ -2258,7 +2281,20 @@ function supSubmitTicket(){
     msgEl.textContent = '✕ Please fill all required fields (marked *) before submitting.';
     return;
   }
-  const ticketId = 'TK-' + (1000 + (hashSeed(subject + priority) % 8999));
+  msgEl.className = 'lp-form-msg';
+  msgEl.textContent = 'Submitting support ticket…';
+  const response = await fetch('/api/tickets', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ subject, category, priority, networkId:document.getElementById('tk-network').value.trim(), description:desc })
+  }).catch(()=>null);
+  if(!response || !response.ok){
+    const detail = response ? await response.json().catch(()=>({})) : {};
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = `✕ ${detail.error || 'Could not reach the server. Please try again.'}`;
+    return;
+  }
+  const ticket = await response.json();
+  const ticketId = 'TK-' + ticket.id.slice(0,8).toUpperCase();
   msgEl.className = 'lp-form-msg ok';
   msgEl.textContent = `✓ Ticket ${ticketId} submitted — ${priority} priority, routed to zone support desk.`;
   document.getElementById('tk-subject').value = '';
@@ -2311,10 +2347,15 @@ function boot(){
  
   tickClock();
   setInterval(tickClock, 1000);
+
+  const socket = io();
+  socket.on('fault_event', event=>{
+    const mod = Object.values(DATA).flatMap(p=>Object.values(p.wards)).flatMap(w=>Object.values(w.sections)).flatMap(s=>s.modules).find(m=>m.code===event.moduleId);
+    if(mod){ mod.status='fault'; if(mod.children[0]) mod.children[0].faulty=true; render(); renderMaintenancePage(); }
+  });
 }
  
 boot();
 </script>
 </body>
 </html>
- 
