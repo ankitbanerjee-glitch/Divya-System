@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 30029)
+Total output lines: 2443
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -271,13 +274,16 @@
   .badge.warn{color:#2a1a02;background:var(--maint);}
   .badge.ok{color:#04120c;background:var(--active);}
  
+  .dispatch-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
   .dispatch-btn{
-    width:100%;margin-top:14px;padding:11px;border-radius:24px;border:1px solid var(--cyan-dim);
+    width:100%;padding:11px;border-radius:24px;border:1px solid var(--cyan-dim);
     background:rgba(79,209,197,0.08);color:var(--cyan);font-family:var(--disp);font-weight:600;
     font-size:12px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all .15s;
   }
   .dispatch-btn:hover{background:rgba(79,209,197,0.16);}
   .dispatch-btn:active{transform:scale(0.98);}
+  .dispatch-btn.repair{border-color:rgba(251,103,103,.55);color:var(--fault);background:rgba(251,103,103,.07)}
+  .dispatch-btn.maintenance{border-color:rgba(253,183,86,.55);color:var(--maint);background:rgba(253,183,86,.07)}
   .dispatch-status{font-family:var(--mono);font-size:10.5px;color:var(--active);margin-top:9px;text-align:center;min-height:14px;}
  
   /* ---------- dispatch confirmation modal ---------- */
@@ -632,6 +638,10 @@
           <span class="kv-value"><span class="badge" id="nd-maint">—</span></span>
         </div>
         <button class="dispatch-btn" id="dispatch-btn">Fault Repair + Dispatch Maintenance</button>
+        <div class="dispatch-actions">
+          <button class="dispatch-btn repair" id="fault-repair-btn">Fault Repair</button>
+          <button class="dispatch-btn maintenance" id="maintenance-dispatch-btn">Dispatch Maintenance</button>
+        </div>
         <div class="dispatch-status" id="dispatch-status"></div>
       </div>
     </div>
@@ -1133,11 +1143,7 @@ const DATA = {
     wards:{
       "F-69A": { wardNo:69, sections:{
         "North-1": { incharge:"Suvro Banerjee", contact:"96xxxxxx20", modules: mods('BLG','29',8,[3]) },
-        "South-1": { incharge:"Ritika Mukherjee", contact:"90xxxxxx65", modules: mods('BLG','29',6) }
-      }}
-    }
-  },
-  "700032": {
+        "South-1": { …29 tokens truncated…: {
     area:"Dhakuria / Jadavpur University", lat:22.4998, lng:88.3697,
     wards:{
       "F-92A": { wardNo:92, sections:{
@@ -1595,10 +1601,11 @@ function applyRole(){
   const isAdmin = session && session.role === 'admin';
   document.body.classList.toggle('user-role', Boolean(session && !isAdmin));
   document.getElementById('role-pill').textContent = isAdmin ? 'ADMIN · ' + session.name.toUpperCase() : 'USER · ' + (session?.name || 'GUEST').toUpperCase();
-  const dispatch = document.getElementById('dispatch-btn');
-  dispatch.disabled = !isAdmin;
-  dispatch.style.opacity = isAdmin ? '1' : '.45';
-  dispatch.title = isAdmin ? '' : 'Admin access is required to repair faults and dispatch maintenance.';
+  document.querySelectorAll('#dispatch-btn,#fault-repair-btn,#maintenance-dispatch-btn').forEach(dispatch=>{
+    dispatch.disabled = !isAdmin;
+    dispatch.style.opacity = isAdmin ? '1' : '.45';
+    dispatch.title = isAdmin ? '' : 'Admin access is required to repair faults and dispatch maintenance.';
+  });
   if(session){
     document.getElementById('login-screen').style.display = 'none';
     if(!isAdmin) switchPage('support');
@@ -1612,7 +1619,10 @@ document.getElementById('login-btn').addEventListener('click', ()=>{
   applyRole();
 });
 document.getElementById('logout-btn').addEventListener('click', ()=>{ localStorage.removeItem('divya-session'); location.reload(); });
-document.getElementById('dispatch-btn').addEventListener('click', openDispatchModal);
+let dispatchMode = 'combined';
+document.getElementById('dispatch-btn').addEventListener('click', ()=>openDispatchModal('combined'));
+document.getElementById('fault-repair-btn').addEventListener('click', ()=>openDispatchModal('repair'));
+document.getElementById('maintenance-dispatch-btn').addEventListener('click', ()=>openDispatchModal('maintenance'));
  
 /* ===================== DISPATCH MODAL ===================== */
 const dispatchBackdrop = document.getElementById('dispatch-modal-backdrop');
@@ -1620,13 +1630,15 @@ const dispatchNameInput = document.getElementById('modal-dispatcher-name');
 const dispatchNameField = document.getElementById('modal-name-field');
 const dispatchMemoInput = document.getElementById('modal-memo');
  
-function openDispatchModal(){
+function openDispatchModal(mode='combined'){
+  dispatchMode = mode;
   const mod = getSelectedModule();
   const secData = currentSectionData();
   const faultyChildren = mod.children.filter(c=>c.faulty).map(c=>c.id);
  
+  const actionText = mode === 'repair' ? 'Start fault repair' : mode === 'maintenance' ? 'Dispatch maintenance crew' : 'Start fault repair and dispatch maintenance crew';
   document.getElementById('modal-desc').innerHTML =
-    `Initiate rapid field crew deployment for module <b>${mod.code}</b>. This action alerts Section In-Charge <b>${secData.incharge} (+91 ${secData.contact})</b> and logs an emergency ticket with Central Dispatch.`;
+    `${actionText} for module <b>${mod.code}</b>. This action alerts Section In-Charge <b>${secData.incharge} (+91 ${secData.contact})</b> and logs the task with Central Dispatch.`;
   document.getElementById('modal-feeder').textContent = `${state.ward} (${state.section})`;
   document.getElementById('modal-targets').textContent = faultyChildren.length ? faultyChildren.join(', ') : 'None flagged';
  
@@ -1660,13 +1672,18 @@ document.getElementById('modal-authorize-btn').addEventListener('click', async (
     return;
   }
   const today = new Date();
-  mod.lastMaint = today;
-  mod.nextMaint = new Date(today.getTime() + 90*86400000);
-  mod.children.forEach(c=> c.faulty = false);
-  mod.status = 'active';
+  if(dispatchMode !== 'maintenance'){
+    mod.children.forEach(c=> c.faulty = false);
+    mod.status = 'active';
+  }
+  if(dispatchMode !== 'repair'){
+    mod.lastMaint = today;
+    mod.nextMaint = new Date(today.getTime() + 90*86400000);
+  }
  
   closeDispatchModal();
-  document.getElementById('dispatch-status').textContent = `✓ Dispatch authorized by ${dispatcherName} — next maintenance due ${fmtDate(mod.nextMaint)}`;
+  const result = dispatchMode === 'repair' ? 'Fault repair started' : dispatchMode === 'maintenance' ? `Maintenance dispatched — next due ${fmtDate(mod.nextMaint)}` : `Fault repair and maintenance dispatched — next due ${fmtDate(mod.nextMaint)}`;
+  document.getElementById('dispatch-status').textContent = `✓ ${result}, authorized by ${dispatcherName}`;
   renderSidePanel();
   renderMesh();
   renderNetworkDetails();
