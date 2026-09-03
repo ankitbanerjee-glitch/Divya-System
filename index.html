@@ -491,6 +491,7 @@
   .login-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at top,#152536,#070b10 58%);}
   .login-card{width:min(430px,100%);padding:30px;border:1px solid var(--cyan-dim);border-radius:16px;background:var(--panel);box-shadow:0 24px 80px rgba(0,0,0,.45);}
   .login-card h2{font-family:var(--disp);margin:0 0 8px;letter-spacing:.04em}.login-card p{color:var(--text-dim);font-size:13px;line-height:1.55}.login-card input{width:100%;margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel-2);color:var(--text);font:inherit}.login-role{display:flex;gap:10px;margin:16px 0}.login-role label{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:13px}.login-card button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--cyan);color:#06201d;font-weight:700;cursor:pointer}.login-error{min-height:18px;margin-top:10px;color:var(--fault);font:12px var(--mono)}.role-pill{font:10px var(--mono);padding:5px 8px;border:1px solid var(--cyan-dim);border-radius:20px;color:var(--cyan)}.logout-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:5px 8px;cursor:pointer;font-size:11px}
+  .user-role .nav-item[data-page="dashboard"],.user-role .nav-item[data-page="maintenance"],.user-role .nav-item[data-page="overview"]{display:none}
 </style>
 </head>
 <body>
@@ -1592,12 +1593,16 @@ function renderFaultLog(mod){
 function applyRole(){
   const session = JSON.parse(localStorage.getItem('divya-session') || 'null');
   const isAdmin = session && session.role === 'admin';
+  document.body.classList.toggle('user-role', Boolean(session && !isAdmin));
   document.getElementById('role-pill').textContent = isAdmin ? 'ADMIN · ' + session.name.toUpperCase() : 'USER · ' + (session?.name || 'GUEST').toUpperCase();
   const dispatch = document.getElementById('dispatch-btn');
   dispatch.disabled = !isAdmin;
   dispatch.style.opacity = isAdmin ? '1' : '.45';
   dispatch.title = isAdmin ? '' : 'Admin access is required to repair faults and dispatch maintenance.';
-  if(session) document.getElementById('login-screen').style.display = 'none';
+  if(session){
+    document.getElementById('login-screen').style.display = 'none';
+    if(!isAdmin) switchPage('support');
+  }
 }
 document.getElementById('login-btn').addEventListener('click', ()=>{
   const name = document.getElementById('login-name').value.trim();
