@@ -2134,6 +2134,29 @@ function renderOvReports(){
 /* ===================== SUPPORT SYSTEM PAGE ===================== */
 const TICKET_CATEGORIES = ['Technical Fault','Equipment Request','Access / Permissions','Billing / Contract','Other'];
 let supState = { tab:'open' };
+window._apiTickets = [];
+
+function apiTicketToQueue(ticket){
+  return {
+    id: ticket.id,
+    category: ticket.category,
+    priority: ticket.priority,
+    status: ticket.status || 'open',
+    submittedTicket: true,
+    createdAt: ticket.createdAt,
+    mod: { code: ticket.networkId || 'GENERAL SUPPORT' },
+    pinArea: 'Kolkata', ward: 'Support', section: 'Desk',
+    secData: { incharge: 'Support Desk' }
+  };
+}
+
+async function loadSavedTickets(){
+  const response = await fetch('/api/tickets?limit=100').catch(()=>null);
+  if(!response || !response.ok) return;
+  const tickets = await response.json();
+  window._apiTickets = tickets.map(apiTicketToQueue);
+  renderSupportPage();
+}
  
 function supAggregateStaff(){
   const staff = [];
@@ -2177,6 +2200,8 @@ function supAggregateTickets(){
 function renderSupportPage(){
   const staff = supAggregateStaff();
   const tickets = supAggregateTickets();
+  tickets.open = [...window._apiTickets.filter(ticket => ticket.status !== 'resolved'), ...tickets.open];
+  tickets.resolved = [...window._apiTickets.filter(ticket => ticket.status === 'resolved'), ...tickets.resolved];
  
   document.getElementById('sup-kpi-staff').textContent = staff.length;
   document.getElementById('sup-kpi-staff-sub').textContent = `${staff.filter(s=>s.status==='Available').length} available now`;
@@ -2209,7 +2234,7 @@ function renderSupQueue(){
   listEl.innerHTML = items.map(t=>{
     const rnd = seededRand(hashSeed(t.mod.code + t.category));
     const hrs = 1 + Math.floor(rnd()*48);
-    const timeLabel = supState.tab === 'resolved' ? `Closed ${Math.floor(rnd()*6)+1}d ago` : `Opened ${hrs}h ago`;
+    const timeLabel = t.submittedTicket ? 'Submitted just now' : (supState.tab === 'resolved' ? `Closed ${Math.floor(rnd()*6)+1}d ago` : `Opened ${hrs}h ago`);
     const badgeClass = t.priority === 'Critical' ? 'critical' : t.priority === 'High' ? 'high' : t.priority === 'Medium' ? 'amber' : 'blue';
     const dotColor = badgeClass === 'critical' ? 'var(--lp-critical)' : badgeClass === 'high' ? 'var(--lp-high)' : badgeClass === 'amber' ? 'var(--lp-amber)' : 'var(--lp-blue)';
     return `<div class="lp-queue-row ${rowCls}">
@@ -2294,6 +2319,8 @@ async function supSubmitTicket(){
     return;
   }
   const ticket = await response.json();
+  window._apiTickets.unshift(apiTicketToQueue(ticket));
+  renderSupportPage();
   const ticketId = 'TK-' + ticket.id.slice(0,8).toUpperCase();
   msgEl.className = 'lp-form-msg ok';
   msgEl.textContent = `✓ Ticket ${ticketId} submitted — ${priority} priority, routed to zone support desk.`;
@@ -2344,6 +2371,7 @@ function boot(){
  
   lpInitControls();
   supInitControls();
+  loadSavedTickets();
  
   tickClock();
   setInterval(tickClock, 1000);
