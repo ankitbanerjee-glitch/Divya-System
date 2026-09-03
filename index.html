@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 30029)
-Total output lines: 2443
+Warning: truncated output (original token count: 30033)
+Total output lines: 2442
 
 <!DOCTYPE html>
 <html lang="en">
@@ -496,7 +496,7 @@ Total output lines: 2443
   .lp-empty{font-size:11.5px;color:var(--lp-faint);padding:10px 2px;font-family:'JetBrains Mono',monospace;}
   .login-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at top,#152536,#070b10 58%);}
   .login-card{width:min(430px,100%);padding:30px;border:1px solid var(--cyan-dim);border-radius:16px;background:var(--panel);box-shadow:0 24px 80px rgba(0,0,0,.45);}
-  .login-card h2{font-family:var(--disp);margin:0 0 8px;letter-spacing:.04em}.login-card p{color:var(--text-dim);font-size:13px;line-height:1.55}.login-card input{width:100%;margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel-2);color:var(--text);font:inherit}.login-role{display:flex;gap:10px;margin:16px 0}.login-role label{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:13px}.login-card button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--cyan);color:#06201d;font-weight:700;cursor:pointer}.login-error{min-height:18px;margin-top:10px;color:var(--fault);font:12px var(--mono)}.role-pill{font:10px var(--mono);padding:5px 8px;border:1px solid var(--cyan-dim);border-radius:20px;color:var(--cyan)}.logout-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:5px 8px;cursor:pointer;font-size:11px}
+  .login-card h2{font-family:var(--disp);margin:0 0 8px;letter-spacing:.04em}.login-card p{color:var(--text-dim);font-size:13px;line-height:1.55}.login-card input:not([type="radio"]){width:100%;margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel-2);color:var(--text);font:inherit}.login-role{display:flex;gap:10px;margin:16px 0}.login-role label{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:13px}.login-role input{accent-color:var(--cyan)}.login-card button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--cyan);color:#06201d;font-weight:700;cursor:pointer}.login-error{min-height:18px;margin-top:10px;color:var(--fault);font:12px var(--mono)}.role-pill{font:10px var(--mono);padding:5px 8px;border:1px solid var(--cyan-dim);border-radius:20px;color:var(--cyan)}.logout-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:5px 8px;cursor:pointer;font-size:11px}
   .user-role .nav-item[data-page="dashboard"],.user-role .nav-item[data-page="maintenance"],.user-role .nav-item[data-page="overview"]{display:none}
 </style>
 </head>
@@ -1142,8 +1142,11 @@ const DATA = {
     area:"Ballygunge", lat:22.5299, lng:88.3595,
     wards:{
       "F-69A": { wardNo:69, sections:{
-        "North-1": { incharge:"Suvro Banerjee", contact:"96xxxxxx20", modules: mods('BLG','29',8,[3]) },
-        "South-1": { …29 tokens truncated…: {
+        "North-1": { incharge:"Suvro Banerjee", contact:"96xxxxx…33 tokens truncated…LG','29',6) }
+      }}
+    }
+  },
+  "700032": {
     area:"Dhakuria / Jadavpur University", lat:22.4998, lng:88.3697,
     wards:{
       "F-92A": { wardNo:92, sections:{
@@ -1614,8 +1617,7 @@ function applyRole(){
 document.getElementById('login-btn').addEventListener('click', ()=>{
   const name = document.getElementById('login-name').value.trim();
   const role = document.querySelector('input[name="role"]:checked').value;
-  if(!name){ document.getElementById('login-error').textContent = 'Please enter your name.'; return; }
-  localStorage.setItem('divya-session', JSON.stringify({name, role}));
+  localStorage.setItem('divya-session', JSON.stringify({name: name || (role === 'admin' ? 'Administrator' : 'User'), role}));
   applyRole();
 });
 document.getElementById('logout-btn').addEventListener('click', ()=>{ localStorage.removeItem('divya-session'); location.reload(); });
