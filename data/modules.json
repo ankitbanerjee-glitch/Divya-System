@@ -1,7 +1,7 @@
-{
-  "192.168.1.10": { "name": "Parent Mod A", "lat": 22.5726, "lng": 88.3639, "type": "parent" },
-  "192.168.1.11": { "name": "Child Mod 1", "lat": 22.5780, "lng": 88.3675, "type": "child" },
-  "192.168.1.12": { "name": "Child Mod 2", "lat": 22.5844, "lng": 88.3720, "type": "child" },
-  "192.168.1.20": { "name": "Parent Mod B", "lat": 22.5920, "lng": 88.3800, "type": "parent" },
-  "192.168.1.21": { "name": "Child Mod 3", "lat": 22.5988, "lng": 88.3885, "type": "child" }
-}
+[
+  { "nodeId": "DEMO-NODE-001", "moduleCode": "P1-DMO-KOL01", "ip": null, "type": "parent", "area": "Demonstration Zone A", "pin": "DEMO-A", "ward": "DEMO-W1", "section": "Sandbox-1", "lat": 0.01, "lng": 0.01 },
+  { "nodeId": "DEMO-NODE-002", "moduleCode": "P2-DMO-KOL02", "ip": null, "type": "child", "area": "Demonstration Zone A", "pin": "DEMO-A", "ward": "DEMO-W1", "section": "Sandbox-1", "lat": 0.02, "lng": 0.01 },
+  { "nodeId": "DEMO-NODE-003", "moduleCode": "P3-DMO-KOL03", "ip": null, "type": "child", "area": "Demonstration Zone B", "pin": "DEMO-B", "ward": "DEMO-W2", "section": "Sandbox-2", "lat": 0.03, "lng": 0.02 },
+  { "nodeId": "DEMO-NODE-004", "moduleCode": "P4-DMO-KOL04", "ip": null, "type": "parent", "area": "Demonstration Zone B", "pin": "DEMO-B", "ward": "DEMO-W2", "section": "Sandbox-2", "lat": 0.04, "lng": 0.03 },
+  { "nodeId": "DEMO-NODE-005", "moduleCode": "P5-DMO-KOL05", "ip": null, "type": "child", "area": "Demonstration Zone C", "pin": "DEMO-C", "ward": "DEMO-W3", "section": "Sandbox-3", "lat": 0.05, "lng": 0.04 }
+]
