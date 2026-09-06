@@ -1,6 +1,4 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
@@ -25,8 +23,6 @@ function loadLocalEnvironment() {
 loadLocalEnvironment();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { serveClient: true });
 
 const DATA_DIR = process.env.DIVYA_DATA_DIR || path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'runtime.json');
@@ -36,10 +32,10 @@ const MONGODB_DB = process.env.MONGODB_DB || 'divya_system';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const SESSION_COOKIE = IS_PRODUCTION ? '__Host-divya_session' : 'divya_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-const sessions = new Map();
+const SESSION_SECRET = process.env.DIVYA_SESSION_SECRET || 'divya-local-development-secret-change-me';
 
 if (IS_PRODUCTION) {
-  const required = ['MONGODB_URI', 'DIVYA_ADMIN_USER', 'DIVYA_ADMIN_PASSWORD', 'DIVYA_USER_USER', 'DIVYA_USER_PASSWORD'];
+  const required = ['MONGODB_URI', 'DIVYA_ADMIN_USER', 'DIVYA_ADMIN_PASSWORD', 'DIVYA_USER_USER', 'DIVYA_USER_PASSWORD', 'DIVYA_SESSION_SECRET'];
   const missing = required.filter((key) => !String(process.env[key] || '').trim());
   if (missing.length) throw new Error(`Missing required production configuration: ${missing.join(', ')}`);
   if (process.env.DIVYA_ADMIN_PASSWORD === 'DivyaAdmin@2026' || process.env.DIVYA_USER_PASSWORD === 'DivyaUser@2026') {
@@ -73,6 +69,7 @@ let runtime = readJson(STATE_FILE, {
 let writeQueue = Promise.resolve();
 let mongoClient = null;
 let runtimeCollection = null;
+let databaseInitPromise = null;
 let databaseStatus = { mode: 'json', connected: false, name: null, error: null };
 
 function readJson(filePath, fallback) {
@@ -101,16 +98,31 @@ function safeEqual(left, right) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function createSessionToken(account) {
+  const payload = Buffer.from(JSON.stringify({
+    id: account.id,
+    role: account.role,
+    name: account.name,
+    username: account.username,
+    expiresAt: Date.now() + SESSION_TTL_MS
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
 function sessionForRequest(req) {
   const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
-  const session = token ? sessions.get(token) : null;
-  if (!session) return null;
-  if (session.expiresAt <= Date.now()) {
-    sessions.delete(token);
+  if (!token) return null;
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature) return null;
+  const expected = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  if (!safeEqual(expected, signature)) return null;
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return session.expiresAt > Date.now() ? session : null;
+  } catch (error) {
     return null;
   }
-  session.expiresAt = Date.now() + SESSION_TTL_MS;
-  return session;
 }
 
 function publicUser(session) {
@@ -233,6 +245,23 @@ async function initializeDatabase() {
   }
 }
 
+function ensureDatabase() {
+  if (!databaseInitPromise) databaseInitPromise = initializeDatabase();
+  return databaseInitPromise;
+}
+
+async function refreshRuntimeFromDatabase() {
+  if (!runtimeCollection) return;
+  const storedRuntime = await runtimeCollection.findOne({ _id: 'console-runtime' });
+  if (!storedRuntime) return;
+  const { _id, ...storedState } = storedRuntime;
+  runtime = { events: [], workOrders: [], tickets: [], ...storedState };
+}
+
+function broadcast() {
+  // Vercel clients poll /api/bootstrap for near-real-time updates.
+}
+
 function recentActivity(limit = 40) {
   const safeLimit = Math.max(1, Math.min(Number(limit) || 40, 100));
   return [...runtime.events]
@@ -292,6 +321,14 @@ app.use((req, res, next) => {
   if (IS_PRODUCTION) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
+app.use(async (req, res, next) => {
+  try {
+    await ensureDatabase();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const rateBuckets = new Map();
 function rateLimit(req, res, next) {
@@ -333,11 +370,10 @@ app.post('/api/auth/login', loginRateLimit, (req, res) => {
   if (!account || !safeEqual(account.password, password)) {
     return res.status(401).json({ error: 'Invalid username, password, or access type.' });
   }
-  const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, { ...account, password: undefined, expiresAt: Date.now() + SESSION_TTL_MS });
+  const token = createSessionToken(account);
   const secure = IS_PRODUCTION ? '; Secure' : '';
   res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS / 1000}${secure}`);
-  res.json({ status: 'authenticated', user: publicUser(sessions.get(token)) });
+  res.json({ status: 'authenticated', user: publicUser(account) });
 });
 
 app.get('/api/auth/me', (req, res) => {
@@ -348,8 +384,6 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
-  if (token) sessions.delete(token);
   const secure = IS_PRODUCTION ? '; Secure' : '';
   res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`);
   res.json({ status: 'signed_out' });
@@ -361,6 +395,14 @@ app.get('/healthz', (req, res) => {
 });
 
 app.use(['/api', '/report-fault'], requireAuth);
+app.use(['/api', '/report-fault'], async (req, res, next) => {
+  try {
+    await refreshRuntimeFromDatabase();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'DIVYA Grid Console', database: publicDatabaseStatus(), time: new Date().toISOString() });
@@ -390,7 +432,7 @@ async function reportFault(req, res) {
   }
   const event = buildFault(module, req.body, 'device');
   await addEvent(event);
-  io.emit('fault_event', event);
+  broadcast('fault_event', event);
   res.status(201).json({ status: 'recorded', event });
 }
 
@@ -415,7 +457,7 @@ app.post('/api/faults/simulate', requireAdmin, async (req, res) => {
   };
   const event = buildFault(simulatedModule, req.body, 'simulator');
   await addEvent(event);
-  io.emit('fault_event', event);
+  broadcast('fault_event', event);
   res.status(201).json({ status: 'recorded', event });
 });
 
@@ -426,7 +468,7 @@ app.patch('/api/faults/:id/acknowledge', requireAdmin, async (req, res) => {
   event.acknowledgedBy = clean(req.body.acknowledgedBy, 80) || 'Control room operator';
   event.acknowledgedAt = new Date().toISOString();
   await persistRuntime();
-  io.emit('fault_acknowledged', event);
+  broadcast('fault_acknowledged', event);
   res.json({ status: 'acknowledged', event });
 });
 
@@ -439,7 +481,7 @@ app.patch('/api/faults/:id/resolve', requireAdmin, async (req, res) => {
   event.resolution = clean(req.body.resolution, 160) || 'Fault repaired and supply normalized';
   event.resolvedAt = new Date().toISOString();
   await persistRuntime();
-  io.emit('fault_resolved', event);
+  broadcast('fault_resolved', event);
   res.json({ status: 'resolved', event });
 });
 
@@ -484,7 +526,7 @@ app.post('/api/work-orders', requireAdmin, async (req, res) => {
   runtime.workOrders.unshift(workOrder);
   runtime.workOrders = runtime.workOrders.slice(0, 200);
   await addEvent({ ...workOrder, kind: 'work_order' });
-  io.emit('work_order_created', workOrder);
+  broadcast('work_order_created', workOrder);
   res.status(201).json({ status: 'created', workOrder });
 });
 
@@ -510,7 +552,7 @@ app.patch('/api/work-orders/:id', requireAdmin, async (req, res) => {
     networkId: workOrder.networkId, status: nextStatus, technician: workOrder.technician,
     createdAt: workOrder.updatedAt
   });
-  io.emit('work_order_updated', workOrder);
+  broadcast('work_order_updated', workOrder);
   res.json({ status: 'updated', workOrder });
 });
 
@@ -535,7 +577,7 @@ app.post('/api/tickets', async (req, res) => {
   runtime.tickets.unshift(ticket);
   runtime.tickets = runtime.tickets.slice(0, 200);
   await addEvent({ ...ticket, kind: 'ticket' });
-  io.emit('ticket_created', ticket);
+  broadcast('ticket_created', ticket);
   res.status(201).json({ status: 'created', ticket });
 });
 
@@ -552,26 +594,9 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'The DIVYA service could not complete this request.' });
 });
 
-io.use((socket, next) => {
-  const request = { headers: socket.handshake.headers };
-  const session = sessionForRequest(request);
-  if (!session) return next(new Error('Authentication required'));
-  socket.user = publicUser(session);
-  next();
-});
-
-io.on('connection', (socket) => {
-  socket.emit('system_ready', { connectedAt: new Date().toISOString(), latestEvent: recentActivity(1)[0] || null });
-});
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, session] of sessions) if (session.expiresAt <= now) sessions.delete(token);
-}, 15 * 60 * 1000).unref();
-
 async function startServer() {
-  await initializeDatabase();
-  server.listen(PORT, '0.0.0.0', () => {
+  await ensureDatabase();
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`DIVYA Grid Console ready on http://localhost:${PORT}`);
     console.log(`Data storage: ${databaseStatus.mode}`);
   });
@@ -579,13 +604,17 @@ async function startServer() {
 
 async function shutdown() {
   if (mongoClient) await mongoClient.close().catch(() => {});
-  server.close(() => process.exit(0));
+  process.exit(0);
 }
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-startServer().catch(error => {
-  console.error('DIVYA startup failed:', error);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  startServer().catch(error => {
+    console.error('DIVYA startup failed:', error);
+    process.exit(1);
+  });
+}
+
+module.exports = app;
