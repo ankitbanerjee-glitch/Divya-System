@@ -1,50 +1,60 @@
-<<<<<<< HEAD
-# Divya-System
-Developed DIVYA', an IoT-enabled fault detection system for Overhead low-voltage grid, utilizing Arduino and LoRa to achieve real-time, long-range wireless monitoring Designed dual-node architecture Child/Parent) integrating ZMPT101B voltage sensors and motorized MCCBs to automatically isolate broken lines and prevent electrocution hazards.
-=======
-# Power Grid Fault Detection System
+# DIVYA System
 
-A premium-styled industrial IoT dashboard that visualises power-grid modules on Google Maps, highlights faults in real-time and notifies the nearest engineer.
+DIVYA is an IoT-enabled fault monitoring and field-response prototype for overhead low-voltage distribution grids. The project combines a real-time operational dashboard with a Node.js service that can receive device alerts, record operational activity, and notify connected control-room screens.
 
-## Quick Start
+## What is included
 
-1. Install dependencies
+- Live grid dashboard with PIN, feeder, section, parent-module, and child-node views
+- Leaflet-based topology and satellite map layers
+- Socket.IO fault updates without page refresh
+- Registered-node validation for hardware fault reports
+- Persistent fault activity, work orders, and support tickets
+- Nearest-available-engineer recommendation for registered nodes
+- Demonstration fault simulator for dashboard testing
+- Maintenance, overview, report, dispatch, and support workspaces
+
+## Run locally
 
 ```bash
-cd "C:/Projects/Divya System"
 npm install
-```
-
-2. Configure Google Maps
-
-Copy `.env.example` to `.env` and replace `YOUR_GOOGLE_MAPS_API_KEY` with a valid key.
-
-3. Start the server
-
-```bash
 npm start
 ```
 
-4. Open the dashboard
+Open `http://localhost:3000`.
 
-Visit http://localhost:3000 in a browser.
+## Connect MongoDB
 
-5. Test a fault
+On Windows, open PowerShell inside the project folder and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup-mongodb.ps1
+```
+
+Enter the password created for the `divya_app` Atlas user when prompted. The script keeps the password hidden, URL-encodes it, creates the private `.env` file, installs dependencies, and starts DIVYA. The `.env` file is excluded from Git and from distributable ZIP files.
+
+When connected, the terminal prints `MongoDB connected: divya_system` and `Data storage: mongodb`. On the first connection, the existing registered modules, engineers, incidents, work orders, and tickets are seeded automatically. If MongoDB is unavailable, DIVYA continues in JSON fallback mode and clearly reports that state in the terminal and health API.
+
+## Sign-in roles
+
+- User — monitoring, network status, overview, alerts, and support tickets
+- Admin — full monitoring plus fault simulation, repair, dispatch, maintenance, work-order control, and reports
+
+Run `setup-mongodb.ps1` to choose private credentials locally, or set the four login environment variables shown in `.env.example`. Never publish working passwords.
+
+## Public prototype deployment
+
+The included `render.yaml` configures DIVYA as a Render Node.js web service with a public health check. Add `MONGODB_URI` and four private login values in the hosting dashboard; never commit them to GitHub. Production startup intentionally fails if any required value is missing or either original demonstration password is used.
+
+## Report a registered device fault
 
 ```bash
 curl -X POST http://localhost:3000/report-fault \
   -H "Content-Type: application/json" \
-  -d '{"ip":"192.168.1.12"}'
+  -d '{"ip":"192.168.1.12","faultType":"Phase voltage loss","telemetry":{"phaseR":0,"phaseY":231,"phaseB":229,"neutral":3.1,"rssi":-82}}'
 ```
 
-You should see the red marker appear, the alert banner show, and the console log the nearest engineer.
+The matching module changes state on every connected dashboard and the incident is recorded in `data/runtime.json`.
 
-## Extending the System
+## Important boundary
 
-- MQTT – add the `mqtt` npm package, subscribe to `grid/faults`, and forward messages to `io.emit('fault_event', ...)`.
-- Database – replace `data/*.json` with a MongoDB or PostgreSQL backend; update `server.js` to expose an API.
-- Docker – a `Dockerfile` + `docker-compose.yml` can be added for containerised deployment.
-- Authentication – protect `/report-fault` with an API key or JWT if desired.
-
-If you'd like any of the optional extensions (MQTT, DB, Docker), tell me which and I'll add them.
->>>>>>> 03ba5f0 (Initial commit)
+This repository is a controlled demonstration and engineering prototype. It must not directly operate live distribution equipment until its sensing, isolation, protection logic, communications, enclosure, and switching interfaces have been reviewed and validated by qualified electrical-protection professionals.
