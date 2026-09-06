@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="DIVYA real-time low-voltage grid fault monitoring and field-response console." />
+<meta name="theme-color" content="#06090f" />
 <title>DIVYA SYSTEM — Grid Monitoring Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <style>
   :root{
     --bg:#070b10;
@@ -41,6 +44,38 @@
   ::selection{background:var(--cyan-dim);}
   a{color:inherit;}
   button{font-family:inherit;}
+  body:not(.authenticated)>:not(#login-screen){visibility:hidden;}
+  #login-screen{position:fixed;inset:0;z-index:1000;display:grid;grid-template-columns:minmax(300px,1.08fr) minmax(380px,.92fr);background:#05090e;color:var(--text);}
+  body.authenticated #login-screen{display:none;}
+  .login-visual{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(32px,6vw,84px);overflow:hidden;background:radial-gradient(circle at 24% 24%,rgba(66,232,208,.17),transparent 34%),radial-gradient(circle at 80% 76%,rgba(58,168,255,.14),transparent 33%),#071018;}
+  .login-visual::before{content:"";position:absolute;inset:0;opacity:.28;background-image:linear-gradient(rgba(66,232,208,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(66,232,208,.14) 1px,transparent 1px);background-size:52px 52px;mask-image:linear-gradient(135deg,#000,transparent 80%);}
+  .login-brand,.login-copy,.login-signal{position:relative;z-index:1;}
+  .login-brand{display:flex;align-items:center;gap:13px;font:700 14px var(--disp);letter-spacing:.12em;}
+  .login-brand .mark{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#03110f;background:linear-gradient(135deg,#87fff0,#42e8d0 48%,#3aa8ff);box-shadow:0 0 34px rgba(66,232,208,.28);}
+  .login-copy h2{max-width:650px;margin:0;font:700 clamp(38px,5vw,68px)/1.03 var(--disp);letter-spacing:-.045em;}
+  .login-copy h2 span{color:var(--cyan);}
+  .login-copy p{max-width:570px;margin:22px 0 0;color:var(--text-dim);font-size:16px;line-height:1.7;}
+  .login-signal{display:flex;align-items:center;gap:9px;color:var(--active);font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;}
+  .login-panel{display:flex;align-items:center;justify-content:center;padding:32px;background:linear-gradient(160deg,#0c131c,#070b11);}
+  .login-card{width:min(440px,100%);padding:36px;border:1px solid rgba(148,163,184,.16);border-radius:22px;background:rgba(15,23,33,.86);box-shadow:0 30px 90px rgba(0,0,0,.38);}
+  .login-card .eyebrow{font:700 11px var(--mono);color:var(--cyan);letter-spacing:.12em;text-transform:uppercase;}
+  .login-card h1{margin:12px 0 7px;font:700 30px var(--disp);}
+  .login-card>p{margin:0 0 26px;color:var(--text-dim);line-height:1.55;}
+  .role-switch{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:5px;border:1px solid var(--border);border-radius:12px;background:#080e15;margin-bottom:20px;}
+  .role-option{border:0;border-radius:8px;padding:10px;background:transparent;color:var(--text-dim);font-weight:700;cursor:pointer;}
+  .role-option.active{background:rgba(79,209,197,.13);color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan-dim);}
+  .login-field{display:grid;gap:7px;margin-top:15px;}
+  .login-field label{font:600 12px var(--mono);color:var(--text-dim);letter-spacing:.04em;}
+  .login-field input{width:100%;min-height:46px;border:1px solid var(--border);border-radius:10px;background:#09111a;color:var(--text);padding:0 13px;font-size:15px;}
+  .login-field input:focus{border-color:var(--cyan);outline:none;box-shadow:0 0 0 3px rgba(79,209,197,.1);}
+  .login-submit{width:100%;min-height:48px;margin-top:22px;border:0;border-radius:11px;background:linear-gradient(135deg,#42e8d0,#3aa8ff);color:#03110f;font-weight:800;cursor:pointer;}
+  .login-submit:disabled{opacity:.55;cursor:wait;}
+  .login-error{min-height:20px;margin-top:12px;color:var(--fault);font:500 12px var(--mono);line-height:1.5;}
+  .login-demo{margin-top:18px;padding:12px;border:1px solid var(--border-soft);border-radius:10px;background:#09111a;color:var(--text-faint);font:500 11px/1.65 var(--mono);}
+  .account-chip{display:flex;align-items:center;gap:9px;padding:6px 9px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.035);}
+  .account-copy{line-height:1.1}.account-name{font-size:12px;font-weight:700}.account-role{margin-top:4px;color:var(--cyan);font:700 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;}
+  .logout-btn{border:0;background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;padding:5px;}.logout-btn:hover{color:var(--fault);}
+  [hidden]{display:none!important;}
  
   /* ---------- top bar ---------- */
   .topbar{
@@ -277,6 +312,16 @@
   }
   .dispatch-btn:hover{background:rgba(79,209,197,0.16);}
   .dispatch-btn:active{transform:scale(0.98);}
+  .network-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .network-action-btn{
+    min-height:40px;padding:9px 10px;border-radius:10px;font:700 11px var(--mono);
+    letter-spacing:.045em;text-transform:uppercase;cursor:pointer;transition:all .15s;
+  }
+  .network-action-btn.repair{border:1px solid rgba(255,102,122,.38);background:rgba(255,102,122,.08);color:#ff93a2;}
+  .network-action-btn.manage{border:1px solid rgba(99,179,255,.38);background:rgba(99,179,255,.08);color:#8bc8ff;}
+  .network-action-btn:hover{transform:translateY(-1px);filter:brightness(1.12);}
+  .network-action-btn:active{transform:translateY(0);}
+  .network-action-btn:disabled,.dispatch-btn:disabled{opacity:.42;cursor:not-allowed;transform:none;}
   .dispatch-status{font-family:var(--mono);font-size:10.5px;color:var(--active);margin-top:9px;text-align:center;min-height:14px;}
  
   /* ---------- dispatch confirmation modal ---------- */
@@ -487,12 +532,189 @@
   }
   .lp-protocol-bar b{color:var(--lp-text);}
   .lp-empty{font-size:11.5px;color:var(--lp-faint);padding:10px 2px;font-family:'JetBrains Mono',monospace;}
+
+  /* ===================== PREMIUM COMMAND-CENTRE LAYER ===================== */
+  :root{
+    --bg:#05080d;
+    --panel:rgba(11,18,25,0.88);
+    --panel-2:#101923;
+    --border:rgba(148,163,184,0.18);
+    --border-soft:rgba(148,163,184,0.1);
+    --text:#f2f7fb;
+    --text-dim:#a5b4c2;
+    --text-faint:#718295;
+    --cyan:#42e8d0;
+    --cyan-dim:rgba(66,232,208,0.35);
+    --violet:#9aa7ff;
+    --active:#35d49a;
+    --fault:#ff667a;
+    --maint:#ffc766;
+    --service:#63b3ff;
+  }
+  html{scroll-behavior:smooth;}
+  body{
+    font-size:14px;
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(rgba(66,232,208,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66,232,208,.025) 1px, transparent 1px),
+      radial-gradient(ellipse 950px 560px at 12% -12%, rgba(66,232,208,.11), transparent 62%),
+      radial-gradient(ellipse 760px 520px at 100% 4%, rgba(99,179,255,.08), transparent 58%);
+    background-size:44px 44px,44px 44px,auto,auto;
+  }
+  button,select,input,textarea{font:inherit;}
+  button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--cyan);outline-offset:3px;
+  }
+  .skip-link{position:fixed;top:8px;left:8px;z-index:500;transform:translateY(-160%);background:var(--cyan);color:#03110f;padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none;}
+  .skip-link:focus{transform:translateY(0);}
+  .topbar{
+    min-height:70px;padding:13px 24px;
+    background:rgba(5,9,15,.78);border-color:rgba(148,163,184,.12);
+    box-shadow:0 12px 40px rgba(0,0,0,.24);backdrop-filter:blur(18px) saturate(130%);
+  }
+  .brand .mark,.sidebar-head .mark{
+    width:38px;height:38px;border-radius:11px;color:#03110f;border:none;
+    background:linear-gradient(135deg,#87fff0 0%,#42e8d0 48%,#3aa8ff 100%);
+    box-shadow:0 0 28px rgba(66,232,208,.2);font-weight:800;
+  }
+  .brand h1{font-size:18px;letter-spacing:.045em;}
+  .brand .sub{font-size:12px;color:var(--text-faint);}
+  .hamburger{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.035);}
+  .topbar-right{gap:10px;}
+  .command-button{
+    border:1px solid rgba(255,102,122,.42);background:rgba(255,102,122,.1);color:#ff9cab;
+    padding:8px 12px;border-radius:10px;font-size:12px;font-family:var(--mono);font-weight:700;
+    cursor:pointer;transition:background .18s,border-color .18s,transform .18s;
+  }
+  .command-button:hover{background:rgba(255,102,122,.18);border-color:rgba(255,102,122,.7);transform:translateY(-1px);}
+  .connection-pill{
+    display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;
+    border:1px solid var(--border);background:rgba(255,255,255,.035);color:var(--text-faint);
+    font:600 12px var(--mono);letter-spacing:.04em;
+  }
+  .connection-pill .live-dot{background:var(--maint);box-shadow:0 0 8px var(--maint);animation:none;}
+  .connection-pill.connected{color:var(--active);border-color:rgba(53,212,154,.3);background:rgba(53,212,154,.07);}
+  .connection-pill.connected .live-dot{background:var(--active);box-shadow:0 0 9px var(--active);animation:pulse 1.8s infinite;}
+  .sidebar{background:rgba(7,12,18,.96);backdrop-filter:blur(22px);box-shadow:24px 0 80px rgba(0,0,0,.42);}
+  .nav-item{font-size:14px;border-radius:11px;padding:12px 13px;}
+  .nav-item.active{background:linear-gradient(90deg,rgba(66,232,208,.12),rgba(66,232,208,.035));box-shadow:inset 3px 0 0 var(--cyan);}
+  .sidebar-foot{font-size:12px;line-height:1.6;}
+  .system-overview{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px 22px 0;
+  }
+  .overview-chip{
+    min-height:82px;padding:14px 15px;border:1px solid var(--border);border-radius:14px;
+    background:linear-gradient(145deg,rgba(18,29,39,.9),rgba(8,14,20,.9));
+    box-shadow:0 16px 34px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.035);
+  }
+  .overview-chip .eyebrow{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);}
+  .overview-chip .metric{font:700 24px var(--disp);margin-top:8px;color:var(--text);}
+  .overview-chip .metric.active{color:var(--active);}.overview-chip .metric.fault{color:var(--fault);}
+  .overview-chip .detail{font:500 12px var(--mono);color:var(--text-faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .selectors{margin:14px 22px 0;padding:14px;border:1px solid var(--border);border-radius:14px;background:rgba(11,18,25,.72);backdrop-filter:blur(12px);}
+  .field label,.lp-field label,.lp-form-field label{font-size:12px;letter-spacing:.07em;}
+  select,.lp-select,.lp-input,.lp-textarea{font-size:14px;min-height:40px;}
+  .layout{grid-template-columns:minmax(260px,.72fr) minmax(420px,1.65fr) minmax(280px,.78fr);gap:16px;padding-top:16px;}
+  .panel{
+    border-radius:16px;background:linear-gradient(155deg,rgba(16,25,35,.94),rgba(8,14,20,.94));
+    box-shadow:0 22px 50px rgba(0,0,0,.19),inset 0 1px 0 rgba(255,255,255,.03);
+    backdrop-filter:blur(12px);
+  }
+  .panel-head{padding:14px 16px;background:rgba(255,255,255,.018);}
+  .panel-head h2{font-size:12px;letter-spacing:.085em;}
+  .panel-body{padding:16px;}
+  .mod-item,.notif-item{padding:9px 10px;border-radius:10px;}
+  .mod-item{font-size:12px;}.mod-status,.notif-type{font-size:11px;}.notif-code{font-size:13px;}.notif-meta{font-size:12px;line-height:1.5;}
+  #map{height:520px;filter:saturate(.85) contrast(1.06);}
+  .mesh-panel::after{content:"";position:absolute;inset:46px 0 48px;pointer-events:none;box-shadow:inset 0 0 70px rgba(2,7,11,.38);z-index:450;}
+  .mesh-toolbar{position:relative;z-index:451;}
+  .toggle-btn,.legend-item{font-size:12px;}
+  .row3{grid-template-columns:minmax(280px,.8fr) minmax(390px,1.35fr) minmax(300px,.85fr);gap:16px;}
+  .telemetry-title{font:600 12px var(--mono);color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px;}
+  .telemetry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .telemetry-cell{background:rgba(255,255,255,.025);border:1px solid var(--border-soft);border-radius:10px;padding:9px 7px;text-align:center;}
+  .telemetry-cell .phase{display:block;font:700 11px var(--mono);color:var(--text-faint);}
+  .telemetry-cell .reading{display:block;font:700 15px var(--disp);margin-top:5px;}
+  .telemetry-foot{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font:500 12px var(--mono);color:var(--text-faint);}
+  .telemetry-foot strong{color:var(--text-dim);font-weight:600;}
+  .dispatch-btn{border-radius:10px;padding:12px;font-size:12px;letter-spacing:.055em;}
+  .modal-card{border-radius:18px;background:linear-gradient(160deg,#121d27,#090f16);box-shadow:0 34px 100px rgba(0,0,0,.64);}
+  .modal-desc{font-size:14px;}.modal-field label{font-size:12px;}.modal-field input,.modal-field textarea{font-size:14px;}
+  .light-page{
+    --lp-bg:#070b11;--lp-card:#0f1721;--lp-border:rgba(148,163,184,.17);--lp-border-soft:rgba(148,163,184,.09);
+    --lp-text:#edf5fa;--lp-dim:#a0afbd;--lp-faint:#718295;
+    --lp-critical:#ff667a;--lp-critical-bg:rgba(255,102,122,.08);--lp-critical-border:rgba(255,102,122,.28);
+    --lp-high:#ff9cab;--lp-high-bg:rgba(255,199,102,.08);--lp-active:#35d49a;--lp-active-bg:rgba(53,212,154,.08);--lp-active-border:rgba(53,212,154,.25);
+    --lp-amber:#ffc766;--lp-amber-bg:rgba(255,199,102,.08);--lp-amber-border:rgba(255,199,102,.25);--lp-blue:#63b3ff;--lp-blue-bg:rgba(99,179,255,.08);
+    background:transparent;padding:22px;min-height:calc(100vh - 70px);
+  }
+  .lp-max{max-width:1440px;}
+  .lp-card{background:linear-gradient(155deg,rgba(16,25,35,.94),rgba(8,14,20,.94));border-radius:14px;box-shadow:0 20px 44px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.025);}
+  .lp-card-head h3,.lp-kpi-title,.lp-module-code,.lp-queue-desc{font-size:12px;}
+  .lp-pill,.lp-badge,.lp-module-sub,.lp-queue-time,.lp-queue-loc,.lp-form-field .hint{font-size:12px;}
+  .lp-select,.lp-input,.lp-textarea,.lp-icon-btn,.lp-btn-outline,.lp-tab{background-color:#0b121a;color:var(--lp-text);border-color:var(--lp-border);}
+  .lp-tab.active,.lp-module-card.ok,.lp-btn-outline{background:#111b25;color:var(--lp-text);}
+  .lp-module-card{border-radius:11px;}.lp-stat-box{background:#0b121a;}.lp-stat-box .lbl{font-size:11px;}.lp-load-row,.lp-contact-row{font-size:13px;}
+  .lp-submit-btn{background:linear-gradient(135deg,#1bd4bc,#38a8ff);color:#03110f;border-radius:10px;font-size:14px;font-weight:800;}
+  .lp-submit-btn:hover{background:linear-gradient(135deg,#57eedb,#6abfff);}
+  .wo-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .wo-history-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;}
+  .wo-card{padding:14px;border:1px solid var(--lp-border);border-radius:12px;background:#0b121a;}
+  .wo-card-top,.wo-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .wo-card-id{font:700 13px var(--mono);color:var(--lp-text);}
+  .wo-card-network{font:700 14px var(--disp);margin-top:10px;}
+  .wo-card-meta{font:500 12px var(--mono);color:var(--lp-dim);line-height:1.6;margin:5px 0 12px;}
+  .wo-stage{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:10px 0;}
+  .wo-stage span{height:4px;border-radius:8px;background:var(--lp-border);}
+  .wo-stage span.done{background:linear-gradient(90deg,var(--lp-active),var(--lp-blue));}
+  .wo-advance{border:1px solid var(--lp-active-border);background:var(--lp-active-bg);color:var(--lp-active);border-radius:8px;padding:7px 10px;font:700 12px var(--mono);cursor:pointer;}
+  .wo-advance:disabled{opacity:.45;cursor:not-allowed;}
+  .toast-stack{position:fixed;right:18px;bottom:18px;z-index:600;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100vw - 36px));}
+  .toast{padding:13px 14px;border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:12px;background:rgba(10,17,24,.96);box-shadow:0 22px 60px rgba(0,0,0,.45);animation:toast-in .22s ease both;}
+  .toast.error{border-left-color:var(--fault);}.toast.success{border-left-color:var(--active);}
+  .toast strong{display:block;font:700 13px var(--disp);}.toast span{display:block;font:500 12px var(--mono);color:var(--text-dim);margin-top:3px;line-height:1.5;}
+  @keyframes toast-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media(max-width:1180px){.system-overview{grid-template-columns:repeat(2,1fr)}.layout,.row3{grid-template-columns:1fr}.mesh-panel{order:-1}}
+  @media(max-width:720px){
+    #login-screen{grid-template-columns:1fr}.login-visual{display:none}.login-panel{padding:18px}.login-card{padding:26px 22px}.account-copy{display:none}
+    .topbar{padding:11px 14px}.brand .sub,.clock{display:none}.brand h1{font-size:15px}.topbar-right{gap:6px}.connection-pill span:last-child{display:none}.connection-pill{padding:8px}.command-button{font-size:11px;padding:8px}
+    .system-overview{grid-template-columns:1fr 1fr;padding:12px 14px 0;gap:8px}.overview-chip{min-height:72px;padding:11px}.overview-chip .metric{font-size:20px}
+    .selectors{margin:12px 14px 0}.layout{padding:12px 14px}.row3{padding:0 14px 18px}.light-page{padding:14px}
+    #map{height:420px}.telemetry-grid{grid-template-columns:repeat(2,1fr)}.lp-grid[style]{grid-template-columns:1fr !important;}
+  }
+  @media(max-width:430px){.brand #page-title-suffix{display:none}.system-overview{grid-template-columns:1fr}.overview-chip{min-height:64px}.legend{display:none}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
+<section id="login-screen" aria-label="DIVYA secure login">
+  <div class="login-visual">
+    <div class="login-brand"><span class="mark">DS</span><span>DIVYA SYSTEM</span></div>
+    <div class="login-copy"><h2>Grid intelligence.<br><span>Controlled access.</span></h2><p>Secure monitoring and field-response access for Kolkata's low-voltage distribution network.</p></div>
+    <div class="login-signal"><span class="live-dot"></span>Control service ready</div>
+  </div>
+  <div class="login-panel">
+    <form class="login-card" id="login-form">
+      <div class="eyebrow">Secure console</div>
+      <h1>Welcome back</h1>
+      <p>Choose your access type and sign in to continue.</p>
+      <div class="role-switch" role="group" aria-label="Access type">
+        <button class="role-option active" type="button" data-login-role="user">User</button>
+        <button class="role-option" type="button" data-login-role="admin">Admin</button>
+      </div>
+      <div class="login-field"><label for="login-username">Username</label><input id="login-username" name="username" autocomplete="username" required></div>
+      <div class="login-field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="login-submit" id="login-submit" type="submit">Sign in as User</button>
+      <div class="login-error" id="login-error" role="alert"></div>
+      <div class="login-demo" id="login-demo">Use the monitoring credentials provided by the DIVYA administrator.</div>
+    </form>
+  </div>
+</section>
+<a class="skip-link" href="#main-dashboard">Skip to grid dashboard</a>
  
 <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-<nav class="sidebar" id="sidebar">
+<nav class="sidebar" id="sidebar" aria-label="Primary navigation">
   <div class="sidebar-head">
     <div class="mark">DS</div>
     <div>
@@ -502,16 +724,16 @@
   </div>
   <div class="sidebar-nav">
     <button class="nav-item active" data-page="dashboard"><span class="ic">&#9635;</span>Dashboard</button>
-    <button class="nav-item" data-page="maintenance"><span class="ic">&#9881;</span>Maintenance</button>
+    <button class="nav-item admin-only" data-page="maintenance"><span class="ic">&#9881;</span>Maintenance</button>
     <button class="nav-item" data-page="overview"><span class="ic">&#9776;</span>Overview &amp; Review</button>
     <button class="nav-item" data-page="support"><span class="ic">&#9742;</span>Support System</button>
   </div>
-  <div class="sidebar-foot">Kolkata Grid &amp; Feeder Network · Console v1.0</div>
+  <div class="sidebar-foot">Kolkata Grid &amp; Feeder Network<br>Command Console · v3.0</div>
 </nav>
  
 <div class="topbar">
   <div class="brand">
-    <div class="hamburger" id="hamburger-btn"><span></span><span></span><span></span></div>
+    <button class="hamburger" id="hamburger-btn" type="button" aria-label="Open navigation" aria-expanded="false"><span></span><span></span><span></span></button>
     <div class="mark">DS</div>
     <div>
       <h1>DIVYA SYSTEM <span id="page-title-suffix">— Dashboard</span></h1>
@@ -519,13 +741,38 @@
     </div>
   </div>
   <div class="topbar-right">
+    <button class="command-button admin-only" id="demo-fault-btn" type="button" title="Create a controlled demonstration alert">Simulate fault</button>
     <div class="clock" id="clock">--:--:--</div>
-    <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    <div class="connection-pill" id="connection-pill" role="status" aria-live="polite"><span class="live-dot"></span><span id="connection-label">CONNECTING</span></div>
+    <div class="account-chip"><div class="account-copy"><div class="account-name" id="account-name">—</div><div class="account-role" id="account-role">—</div></div><button class="logout-btn" id="logout-btn" type="button" title="Sign out">Sign out</button></div>
   </div>
 </div>
  
 <!-- ============ DASHBOARD PAGE ============ -->
-<div id="page-dashboard">
+<div id="page-dashboard" role="main">
+
+  <section class="system-overview" id="main-dashboard" aria-label="Live grid status">
+    <article class="overview-chip">
+      <div class="eyebrow">Monitored modules</div>
+      <div class="metric" id="dash-total">—</div>
+      <div class="detail" id="dash-zones">Across Kolkata zones</div>
+    </article>
+    <article class="overview-chip">
+      <div class="eyebrow">Healthy network</div>
+      <div class="metric active" id="dash-healthy">—</div>
+      <div class="detail" id="dash-uptime">Calculating grid health</div>
+    </article>
+    <article class="overview-chip">
+      <div class="eyebrow">Active faults</div>
+      <div class="metric fault" id="dash-faults">—</div>
+      <div class="detail" id="dash-fault-detail">Awaiting telemetry</div>
+    </article>
+    <article class="overview-chip">
+      <div class="eyebrow">Latest packet</div>
+      <div class="metric" id="dash-last-packet">—</div>
+      <div class="detail" id="dash-signal">Live stream connecting</div>
+    </article>
+  </section>
  
   <div class="selectors">
     <div class="field">
@@ -617,7 +864,20 @@
           <span class="kv-label">Maintenance Report</span>
           <span class="kv-value"><span class="badge" id="nd-maint">—</span></span>
         </div>
-        <button class="dispatch-btn" id="dispatch-btn">Fault Repair + Dispatch Maintenance</button>
+        <div class="telemetry-title">Live conductor telemetry</div>
+        <div class="telemetry-grid" aria-label="Phase voltage readings">
+          <div class="telemetry-cell"><span class="phase">R PHASE</span><span class="reading" id="phase-r">230 V</span></div>
+          <div class="telemetry-cell"><span class="phase">Y PHASE</span><span class="reading" id="phase-y">231 V</span></div>
+          <div class="telemetry-cell"><span class="phase">B PHASE</span><span class="reading" id="phase-b">229 V</span></div>
+          <div class="telemetry-cell"><span class="phase">NEUTRAL</span><span class="reading" id="phase-n">2.1 V</span></div>
+        </div>
+        <div class="telemetry-foot"><span>Signal <strong id="nd-rssi">−78 dBm</strong></span><span id="nd-updated">Simulated baseline</span></div>
+        <div class="telemetry-foot"><span>Field assignment</span><strong id="nd-engineer">Not dispatched</strong></div>
+        <button class="dispatch-btn admin-only" id="dispatch-btn">Fault Repair + Dispatch Maintenance</button>
+        <div class="network-actions admin-only">
+          <button class="network-action-btn repair" id="fault-repair-btn" type="button">Fault Repair</button>
+          <button class="network-action-btn manage" id="dispatch-management-btn" type="button">Dispatch Management</button>
+        </div>
         <div class="dispatch-status" id="dispatch-status"></div>
       </div>
     </div>
@@ -650,17 +910,17 @@
 </div>
  
 <!-- ============ DISPATCH CONFIRMATION MODAL ============ -->
-<div class="modal-backdrop" id="dispatch-modal-backdrop">
-  <div class="modal-card">
+<div class="modal-backdrop" id="dispatch-modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dispatch-modal-title">
     <div class="modal-head">
-      <div class="modal-head-title">&#9888; Confirm Emergency Dispatch</div>
-      <button class="modal-close" id="modal-close-btn">&times;</button>
+      <div class="modal-head-title" id="dispatch-modal-title">&#9888; Confirm Emergency Dispatch</div>
+      <button class="modal-close" id="modal-close-btn" type="button" aria-label="Close dispatch dialog">&times;</button>
     </div>
     <div class="modal-desc" id="modal-desc">—</div>
     <div class="modal-kv">
       <div class="modal-kv-row"><span class="lbl">Feeder Node</span><span class="val" id="modal-feeder">—</span></div>
       <div class="modal-kv-row"><span class="lbl">Target Nodes</span><span class="val targets" id="modal-targets">—</span></div>
-      <div class="modal-kv-row"><span class="lbl">Protocol Code</span><span class="val" id="modal-protocol">NEX-DISPATCH-LV3</span></div>
+      <div class="modal-kv-row"><span class="lbl">Protocol Code</span><span class="val" id="modal-protocol">DIVYA-DISPATCH-LV3</span></div>
     </div>
     <div class="modal-fields">
       <div class="modal-field" id="modal-name-field">
@@ -830,7 +1090,9 @@
           </div>
           <div class="lp-form-field">
             <label>Assigned Technician *</label>
-            <input class="lp-input" id="wo-tech" placeholder="Technician name or ID" />
+            <select class="lp-select" id="wo-tech" style="width:100%;">
+              <option value="">Select available technician</option>
+            </select>
           </div>
           <div class="lp-form-field">
             <label>Work Order Notes</label>
@@ -838,19 +1100,41 @@
             <div class="hint">Provide any special instructions or details</div>
           </div>
           <div class="lp-form-field">
-            <label>Attach Supporting Documents</label>
+            <label>Supporting Document (Demo)</label>
             <input class="lp-input" type="file" id="wo-file" />
-            <div class="hint">Upload diagrams, fault logs, or permits (PDF/Image, max 5MB)</div>
+            <div class="hint">Selected locally for the prototype; file upload storage is not enabled yet.</div>
           </div>
           <button class="lp-submit-btn" id="wo-submit-btn">&#10148; Authorize &amp; Dispatch Work Order</button>
           <div class="lp-form-msg" id="wo-msg"></div>
         </div>
       </div>
     </div>
- 
+
+    <div class="lp-card" style="margin-top:16px;">
+      <div class="lp-card-head">
+        <div>
+          <h3 style="margin-bottom:3px;">Recent Work Orders</h3>
+          <div style="font-size:12px;color:var(--lp-faint);">Track field progress and advance each assigned job</div>
+        </div>
+        <div class="wo-toolbar">
+          <select class="lp-select" id="wo-status-filter" aria-label="Filter work orders by status">
+            <option value="all">All statuses</option>
+            <option value="dispatched">Dispatched</option>
+            <option value="en_route">En route</option>
+            <option value="on_site">On site</option>
+            <option value="completed">Completed</option>
+          </select>
+          <span class="lp-badge blue" id="wo-history-count">0 orders</span>
+        </div>
+      </div>
+      <div class="lp-card-body">
+        <div class="wo-history-list" id="wo-history-list"><div class="lp-empty">No work orders created yet</div></div>
+      </div>
+    </div>
+
     <div class="lp-card lp-protocol-bar" style="margin-top:16px;">
       <span>&#9432;</span>
-      <span><b>NEXGRID Maintenance Protocol:</b> Priority level 1 alerts must be acknowledged within 15 minutes. Dispatch confirmations notify ward engineers and generate live GIS tracking coordinates.</span>
+      <span><b>DIVYA Maintenance Protocol:</b> Priority level 1 alerts must be acknowledged within 15 minutes. Dispatch confirmations notify ward engineers and generate live GIS tracking coordinates.</span>
     </div>
  
   </div>
@@ -933,7 +1217,7 @@
  
     <div class="lp-card lp-protocol-bar" style="margin-top:16px;">
       <span>&#9432;</span>
-      <span><b>NEXGRID Review Cycle:</b> Zone rollups refresh continuously from live section telemetry. Uptime accounts for fault downtime at full weight and scheduled maintenance at partial weight.</span>
+      <span><b>DIVYA Review Cycle:</b> Zone rollups refresh continuously from live section telemetry. Uptime accounts for fault downtime at full weight and scheduled maintenance at partial weight.</span>
     </div>
  
   </div>
@@ -1050,12 +1334,14 @@
  
     <div class="lp-card lp-protocol-bar" style="margin-top:16px;">
       <span>&#9432;</span>
-      <span><b>NEXGRID Support Protocol:</b> Critical-priority tickets are auto-escalated to zone engineers and must receive first response within 30 minutes.</span>
+      <span><b>DIVYA Support Protocol:</b> Critical-priority tickets are auto-escalated to zone engineers and must receive first response within 30 minutes.</span>
     </div>
  
   </div>
 </div>
  
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
 <script>
 /* ===================== UTIL: seeded random ===================== */
 function hashSeed(str){
@@ -1190,6 +1476,12 @@ function enrichModule(mod, todayMs){
   mod.children = children;
   mod.lastMaint = lastMaint;
   mod.nextMaint = nextMaint;
+  mod.telemetry = mod.status === 'fault'
+    ? {phaseR:0, phaseY:229 + Math.round(rnd()*3), phaseB:228 + Math.round(rnd()*3), neutral:Number((2.4 + rnd()*1.8).toFixed(1)), rssi:-78 - Math.round(rnd()*12)}
+    : {phaseR:228 + Math.round(rnd()*4), phaseY:229 + Math.round(rnd()*4), phaseB:228 + Math.round(rnd()*4), neutral:Number((1.2 + rnd()*1.7).toFixed(1)), rssi:-68 - Math.round(rnd()*16)};
+  mod.lastSeen = null;
+  mod.assignedEngineer = null;
+  mod.lastEventId = null;
 }
 (function enrichAll(){
   const today = Date.now();
@@ -1257,9 +1549,259 @@ function blobLatLngs(centerLat, centerLng, x, y, baseR, seed, n=14){
  
 /* ===================== STATE ===================== */
 let state = { pin:null, ward:null, section:null, selectedModule:null, currentPage:'dashboard' };
+let authState = { user:null, role:'user' };
+let backendState = { connected:false, activity:[], workOrders:[], tickets:[], engineers:[], lastEvent:null, database:null };
 let layers = { hex:null, nodes:null, coords:null };
 let streamOn = true;
 let map = null;
+
+function findModuleContext(code){
+  for(const [pin, pinData] of Object.entries(DATA)){
+    for(const [ward, wardData] of Object.entries(pinData.wards)){
+      for(const [section, sectionData] of Object.entries(wardData.sections)){
+        const mod = sectionData.modules.find(item=> item.code === code);
+        if(mod) return {mod, pin, ward, section, area:pinData.area};
+      }
+    }
+  }
+  return null;
+}
+
+function showToast(title, message, tone='success'){
+  const stack = document.getElementById('toast-stack');
+  const toast = document.createElement('div');
+  toast.className = `toast ${tone}`;
+  const heading = document.createElement('strong');
+  const detail = document.createElement('span');
+  heading.textContent = title;
+  detail.textContent = message;
+  toast.append(heading, detail);
+  stack.appendChild(toast);
+  setTimeout(()=> toast.remove(), 5200);
+}
+
+async function apiRequest(url, options={}){
+  const response = await fetch(url, {
+    ...options,
+    headers:{'Content-Type':'application/json', ...(options.headers || {})}
+  });
+  const payload = await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(payload.error || 'The request could not be completed.');
+  return payload;
+}
+
+function applyRoleAccess(user){
+  authState.user = user;
+  authState.role = user.role;
+  document.body.classList.add('authenticated');
+  document.getElementById('account-name').textContent = user.name;
+  document.getElementById('account-role').textContent = user.role;
+  document.querySelectorAll('.admin-only').forEach(element=> element.hidden = user.role !== 'admin');
+}
+
+async function initializeAuthentication(){
+  try{
+    const payload = await apiRequest('/api/auth/me');
+    applyRoleAccess(payload.user);
+    boot();
+  }catch(error){
+    document.body.classList.remove('authenticated');
+    document.getElementById('login-username').focus();
+  }
+}
+
+let selectedLoginRole = 'user';
+document.querySelectorAll('[data-login-role]').forEach(button=>{
+  button.addEventListener('click',()=>{
+    selectedLoginRole = button.dataset.loginRole;
+    document.querySelectorAll('[data-login-role]').forEach(item=>item.classList.toggle('active',item===button));
+    document.getElementById('login-submit').textContent = `Sign in as ${selectedLoginRole === 'admin' ? 'Admin' : 'User'}`;
+    document.getElementById('login-demo').textContent = selectedLoginRole === 'admin'
+      ? 'Administrator credentials are private and must not be shared.'
+      : 'Use the monitoring credentials provided by the DIVYA administrator.';
+    document.getElementById('login-error').textContent = '';
+  });
+});
+
+document.getElementById('login-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button = document.getElementById('login-submit');
+  const error = document.getElementById('login-error');
+  button.disabled = true;
+  button.textContent = 'Authenticating…';
+  error.textContent = '';
+  try{
+    const payload = await apiRequest('/api/auth/login',{
+      method:'POST',
+      body:JSON.stringify({
+        username:document.getElementById('login-username').value.trim(),
+        password:document.getElementById('login-password').value,
+        role:selectedLoginRole
+      })
+    });
+    applyRoleAccess(payload.user);
+    boot();
+  }catch(loginError){
+    error.textContent = loginError.message;
+    document.getElementById('login-password').select();
+  }finally{
+    button.disabled = false;
+    button.textContent = `Sign in as ${selectedLoginRole === 'admin' ? 'Admin' : 'User'}`;
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click',async()=>{
+  try{ await apiRequest('/api/auth/logout',{method:'POST'}); }catch(error){}
+  window.location.reload();
+});
+
+function updateConnection(connected){
+  backendState.connected = connected;
+  const pill = document.getElementById('connection-pill');
+  pill.classList.toggle('connected', connected);
+  document.getElementById('connection-label').textContent = connected ? 'LIVE' : 'OFFLINE';
+}
+
+function updateDashboardKpis(){
+  const {totals, zones} = ovAggregateAll();
+  const healthyPct = Math.round((totals.active / Math.max(totals.total,1))*100);
+  document.getElementById('dash-total').textContent = totals.total;
+  document.getElementById('dash-zones').textContent = `${zones.length} PIN zones · ${zones.reduce((sum,zone)=>sum+zone.wards,0)} feeders`;
+  document.getElementById('dash-healthy').textContent = totals.active;
+  document.getElementById('dash-uptime').textContent = `${healthyPct}% currently healthy`;
+  document.getElementById('dash-faults').textContent = totals.fault;
+  document.getElementById('dash-fault-detail').textContent = totals.fault ? 'Immediate review required' : 'No active incidents';
+  const latest = backendState.lastEvent;
+  document.getElementById('dash-last-packet').textContent = latest ? new Date(latest.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : 'Baseline';
+  document.getElementById('dash-signal').textContent = latest ? `${latest.moduleCode || latest.networkId || latest.kind} · ${latest.source || 'console'}` : 'Demonstration telemetry loaded';
+}
+
+function applyFaultEvent(event, {silent=false}={}){
+  const ctx = findModuleContext(event.moduleCode);
+  if(!ctx) return;
+  ctx.mod.status = 'fault';
+  ctx.mod.telemetry = event.telemetry || ctx.mod.telemetry;
+  ctx.mod.lastSeen = event.createdAt;
+  ctx.mod.assignedEngineer = event.assignedEngineer || null;
+  ctx.mod.lastEventId = event.id;
+  if(!ctx.mod.children.some(child=>child.faulty)){
+    const index = hashSeed(event.id || event.moduleCode) % ctx.mod.children.length;
+    ctx.mod.children[index].faulty = true;
+  }
+  backendState.lastEvent = event;
+  backendState.activity = [event, ...backendState.activity.filter(item=>item.id !== event.id)].slice(0,100);
+  NOTIFICATIONS.unshift({
+    type:'fault', code:event.moduleCode, pin:event.pin || ctx.pin, ward:event.ward || ctx.ward,
+    section:event.section || ctx.section, meta:`${event.area || ctx.area} · live alert just now`
+  });
+  const seen = new Set();
+  for(let i=0;i<NOTIFICATIONS.length;i++){
+    const key = `${NOTIFICATIONS[i].type}-${NOTIFICATIONS[i].code}`;
+    if(seen.has(key)){ NOTIFICATIONS.splice(i,1);i--; } else seen.add(key);
+  }
+  if(state.currentPage === 'dashboard'){
+    setSelection(event.pin || ctx.pin, event.ward || ctx.ward, event.section || ctx.section, event.moduleCode);
+    renderNotifications();
+  }
+  updateDashboardKpis();
+  if(!silent){
+    const engineer = event.assignedEngineer ? `${event.assignedEngineer.name} is ${event.assignedEngineer.distanceKm} km away.` : 'Awaiting field assignment.';
+    showToast('Critical grid event', `${event.moduleCode}: ${event.faultType}. ${engineer}`, 'error');
+  }
+}
+
+function applyFaultResolution(event, {silent=false}={}){
+  const ctx = findModuleContext(event.moduleCode);
+  if(!ctx) return;
+  ctx.mod.status = 'active';
+  ctx.mod.children.forEach(child=>child.faulty=false);
+  ctx.mod.telemetry = {
+    phaseR:230,phaseY:231,phaseB:229,neutral:1.4,
+    rssi:ctx.mod.telemetry?.rssi || -76
+  };
+  ctx.mod.lastSeen = event.resolvedAt || new Date().toISOString();
+  ctx.mod.lastEventId = null;
+  if(!String(event.resolution || '').toLowerCase().includes('dispatch')) ctx.mod.assignedEngineer = null;
+  const stored = backendState.activity.find(item=>item.id===event.id);
+  if(stored) Object.assign(stored,event);
+  NOTIFICATIONS.splice(0,NOTIFICATIONS.length,...NOTIFICATIONS.filter(item=>!(item.type==='fault' && item.code===event.moduleCode)));
+  if(state.currentPage==='dashboard'){
+    render();
+    renderNotifications();
+  }
+  updateDashboardKpis();
+  if(!silent) showToast('Fault repaired',`${event.moduleCode} is healthy and conductor readings are normalized.`,'success');
+}
+
+async function hydrateBackend(){
+  try{
+    const payload = await apiRequest('/api/bootstrap');
+    backendState.activity = payload.activity || [];
+    backendState.workOrders = payload.workOrders || [];
+    backendState.tickets = payload.tickets || [];
+    backendState.engineers = payload.engineers || [];
+    backendState.database = payload.system?.database || null;
+    const storageLabel = backendState.database?.mode === 'mongodb' ? 'MONGODB' : 'LOCAL';
+    document.getElementById('account-role').textContent = `${authState.role} · ${storageLabel}`;
+    populateTechnicians();
+    const latestFaults = [...backendState.activity].filter(item=>item.kind === 'fault' && item.status === 'detected').reverse();
+    latestFaults.forEach(event=>applyFaultEvent(event,{silent:true}));
+    backendState.lastEvent = backendState.activity[0] || null;
+    updateDashboardKpis();
+  }catch(error){
+    updateConnection(false);
+    showToast('Local service unavailable', 'The dashboard remains usable with demonstration data.', 'error');
+  }
+}
+
+function connectRealtime(){
+  if(typeof io !== 'function') return updateConnection(false);
+  const socket = io({timeout:5000});
+  socket.on('connect', ()=>updateConnection(true));
+  socket.on('disconnect', ()=>updateConnection(false));
+  socket.on('fault_event', event=>applyFaultEvent(event));
+  socket.on('fault_acknowledged', event=>{
+    const stored = backendState.activity.find(item=>item.id === event.id);
+    if(stored) Object.assign(stored,event);
+  });
+  socket.on('fault_resolved', event=>applyFaultResolution(event,{silent:true}));
+  socket.on('work_order_created', order=>{
+    backendState.workOrders = [order,...backendState.workOrders.filter(item=>item.id!==order.id)].slice(0,100);
+    backendState.lastEvent = {...order,kind:'work_order'};
+    updateDashboardKpis();
+    if(state.currentPage === 'maintenance') renderMaintenancePage();
+  });
+  socket.on('work_order_updated', order=>{
+    const stored = backendState.workOrders.find(item=>item.id===order.id);
+    if(stored) Object.assign(stored,order); else backendState.workOrders.unshift(order);
+    if(state.currentPage === 'maintenance') renderMaintenancePage();
+  });
+  socket.on('ticket_created', ticket=>{
+    backendState.tickets = [ticket,...backendState.tickets.filter(item=>item.id!==ticket.id)].slice(0,100);
+    if(state.currentPage === 'support') renderSupportPage();
+  });
+}
+
+async function simulateSelectedFault(){
+  const button = document.getElementById('demo-fault-btn');
+  const mod = getSelectedModule();
+  const pinData = DATA[state.pin];
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Sending…';
+  try{
+    const payload = await apiRequest('/api/faults/simulate',{
+      method:'POST',
+      body:JSON.stringify({
+        moduleCode:mod.code,pin:state.pin,ward:state.ward,section:state.section,area:pinData.area,
+        lat:pinData.lat,lng:pinData.lng,faultType:'Phase voltage loss',
+        telemetry:{phaseR:0,phaseY:231,phaseB:229,neutral:3.4,rssi:-82}
+      })
+    });
+    if(payload.event && !backendState.activity.some(item=>item.id===payload.event.id)) applyFaultEvent(payload.event);
+  }catch(error){ showToast('Simulation failed',error.message,'error'); }
+  finally{ button.disabled=false;button.textContent=original; }
+}
  
 /* ===================== NAV / PAGES ===================== */
 const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -1268,20 +1810,25 @@ const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const pageTitleSuffix = document.getElementById('page-title-suffix');
 const PAGE_LABELS = { dashboard:'Dashboard', maintenance:'Maintenance', overview:'Overview & Review', support:'Support System' };
  
-function openSidebar(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); }
-function closeSidebar(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); }
+function openSidebar(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); hamburgerBtn.setAttribute('aria-expanded','true'); }
+function closeSidebar(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); hamburgerBtn.setAttribute('aria-expanded','false'); }
 hamburgerBtn.addEventListener('click', ()=>{
   sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
 });
 sidebarBackdrop.addEventListener('click', closeSidebar);
  
 function switchPage(page){
+  if(page === 'maintenance' && authState.role !== 'admin'){
+    showToast('Admin access required','Maintenance and dispatch controls are available to administrators only.','error');
+    return;
+  }
   state.currentPage = page;
   ['dashboard','maintenance','overview','support'].forEach(p=>{
     document.getElementById('page-'+p).style.display = (p===page) ? '' : 'none';
   });
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active', el.dataset.page === page);
+    if(el.dataset.page === page) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current');
   });
   pageTitleSuffix.textContent = '— ' + PAGE_LABELS[page];
   closeSidebar();
@@ -1479,8 +2026,11 @@ function renderSidePanel(){
   secData.modules.forEach(mod=>{
     const row = document.createElement('div');
     row.className = 'mod-item' + (state.selectedModule===mod.code ? ' selected':'');
+    row.setAttribute('role','button');
+    row.tabIndex = 0;
     row.innerHTML = `<span class="mod-dot" style="background:${STATUS_COLOR[mod.status]}"></span><span class="mod-code">${mod.code}</span><span class="mod-status">${mod.status}</span>`;
     row.addEventListener('click', ()=> selectModule(mod.code));
+    row.addEventListener('keydown', event=>{ if(event.key==='Enter' || event.key===' '){ event.preventDefault();selectModule(mod.code); } });
     if(mod.status === 'active'){ activeEl.appendChild(row); }
     else { faultyEl.appendChild(row); }
   });
@@ -1500,11 +2050,25 @@ function renderNetworkDetails(){
   const isFault = mod.status === 'fault';
   faultBadge.textContent = isFault ? 'ACTIVE' : 'NONE';
   faultBadge.className = 'badge ' + (isFault ? 'neg' : 'pos');
+  document.getElementById('fault-repair-btn').disabled = !isFault;
  
   const maintBadge = document.getElementById('nd-maint');
   const isExpired = mod.nextMaint.getTime() < now;
   maintBadge.textContent = isExpired ? 'EXPIRED' : 'VALID';
   maintBadge.className = 'badge ' + (isExpired ? 'warn' : 'ok');
+
+  const telemetry = mod.telemetry || {phaseR:230,phaseY:231,phaseB:229,neutral:2.1,rssi:-78};
+  document.getElementById('phase-r').textContent = `${telemetry.phaseR} V`;
+  document.getElementById('phase-y').textContent = `${telemetry.phaseY} V`;
+  document.getElementById('phase-b').textContent = `${telemetry.phaseB} V`;
+  document.getElementById('phase-n').textContent = `${telemetry.neutral} V`;
+  document.getElementById('nd-rssi').textContent = `${telemetry.rssi} dBm`;
+  document.getElementById('nd-updated').textContent = mod.lastSeen
+    ? `Updated ${new Date(mod.lastSeen).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`
+    : 'Simulated baseline';
+  document.getElementById('nd-engineer').textContent = mod.assignedEngineer
+    ? `${mod.assignedEngineer.name} · ${mod.assignedEngineer.distanceKm} km`
+    : 'Not dispatched';
  
   document.getElementById('dispatch-status').textContent = '';
  
@@ -1577,6 +2141,52 @@ function renderFaultLog(mod){
 }
  
 document.getElementById('dispatch-btn').addEventListener('click', openDispatchModal);
+document.getElementById('fault-repair-btn').addEventListener('click', repairSelectedFault);
+document.getElementById('dispatch-management-btn').addEventListener('click', openDispatchManagement);
+
+async function repairSelectedFault(){
+  const mod = getSelectedModule();
+  const button = document.getElementById('fault-repair-btn');
+  if(mod.status!=='fault'){
+    showToast('No active fault',`${mod.code} is already operating normally.`,'success');
+    return;
+  }
+  const original = button.textContent;
+  button.disabled=true;
+  button.textContent='Repairing…';
+  try{
+    let event = {
+      id:mod.lastEventId || `LOCAL-${mod.code}`,moduleCode:mod.code,status:'resolved',
+      resolvedBy:'Dashboard operator',resolution:'Fault repaired without maintenance dispatch',resolvedAt:new Date().toISOString()
+    };
+    if(mod.lastEventId){
+      const payload = await apiRequest(`/api/faults/${encodeURIComponent(mod.lastEventId)}/resolve`,{
+        method:'PATCH',body:JSON.stringify({resolvedBy:'Dashboard operator',resolution:'Fault repaired without maintenance dispatch'})
+      });
+      event=payload.event;
+    }
+    applyFaultResolution(event);
+    document.getElementById('dispatch-status').textContent=`✓ ${mod.code} repaired — supply readings normalized`;
+  }catch(error){
+    showToast('Repair failed',error.message,'error');
+  }finally{
+    button.textContent=original;
+    button.disabled=getSelectedModule().status!=='fault';
+  }
+}
+
+function openDispatchManagement(){
+  const mod=getSelectedModule();
+  const selection={pin:state.pin,ward:state.ward,section:state.section,code:mod.code};
+  switchPage('maintenance');
+  lpSetSelection(selection.pin,selection.ward,selection.section);
+  setTimeout(()=>{
+    prefillWorkOrder(selection.code,mod.status==='fault'?'Emergency':'Inspection');
+    document.getElementById('wo-notes').value=mod.status==='fault'
+      ? 'Dispatch requested from Network Details for active fault repair.'
+      : 'Inspection requested from Network Details.';
+  },0);
+}
  
 /* ===================== DISPATCH MODAL ===================== */
 const dispatchBackdrop = document.getElementById('dispatch-modal-backdrop');
@@ -1588,6 +2198,11 @@ function openDispatchModal(){
   const mod = getSelectedModule();
   const secData = currentSectionData();
   const faultyChildren = mod.children.filter(c=>c.faulty).map(c=>c.id);
+
+  if(mod.status !== 'fault' && !faultyChildren.length){
+    showToast('No active fault', `${mod.code} is currently healthy. Use Simulate fault to test the response flow.`, 'success');
+    return;
+  }
  
   document.getElementById('modal-desc').innerHTML =
     `Initiate rapid field crew deployment for module <b>${mod.code}</b>. This action alerts Section In-Charge <b>${secData.incharge} (+91 ${secData.contact})</b> and logs an emergency ticket with Central Dispatch.`;
@@ -1599,14 +2214,17 @@ function openDispatchModal(){
   dispatchNameField.classList.remove('error');
  
   dispatchBackdrop.classList.add('open');
+  dispatchBackdrop.setAttribute('aria-hidden','false');
+  setTimeout(()=>dispatchNameInput.focus(),0);
 }
-function closeDispatchModal(){ dispatchBackdrop.classList.remove('open'); }
+function closeDispatchModal(){ dispatchBackdrop.classList.remove('open');dispatchBackdrop.setAttribute('aria-hidden','true');document.getElementById('dispatch-btn').focus(); }
  
 document.getElementById('modal-close-btn').addEventListener('click', closeDispatchModal);
 document.getElementById('modal-cancel-btn').addEventListener('click', closeDispatchModal);
 dispatchBackdrop.addEventListener('click', (e)=>{ if(e.target === dispatchBackdrop) closeDispatchModal(); });
+document.addEventListener('keydown',event=>{ if(event.key==='Escape' && dispatchBackdrop.classList.contains('open')) closeDispatchModal(); });
  
-document.getElementById('modal-authorize-btn').addEventListener('click', ()=>{
+document.getElementById('modal-authorize-btn').addEventListener('click', async ()=>{
   if(!dispatchNameInput.value.trim()){
     dispatchNameField.classList.add('error');
     dispatchNameInput.focus();
@@ -1615,16 +2233,38 @@ document.getElementById('modal-authorize-btn').addEventListener('click', ()=>{
   const mod = getSelectedModule();
   const dispatcherName = dispatchNameInput.value.trim();
   const today = new Date();
+  const authorizeButton = document.getElementById('modal-authorize-btn');
+  const originalLabel = authorizeButton.innerHTML;
+  authorizeButton.disabled = true;
+  authorizeButton.textContent = 'Authorizing…';
+  try{
+    await apiRequest('/api/work-orders',{
+      method:'POST',
+      body:JSON.stringify({
+        networkId:mod.code,type:'Emergency',scheduledDate:today.toISOString().slice(0,10),
+        technician:currentSectionData().incharge,notes:dispatchMemoInput.value.trim() || `Authorized by ${dispatcherName}`
+      })
+    });
+    if(mod.lastEventId){
+      await apiRequest(`/api/faults/${encodeURIComponent(mod.lastEventId)}/resolve`,{
+        method:'PATCH',body:JSON.stringify({resolvedBy:dispatcherName,resolution:'Fault repaired and maintenance work order dispatched'})
+      });
+    }
   mod.lastMaint = today;
   mod.nextMaint = new Date(today.getTime() + 90*86400000);
   mod.children.forEach(c=> c.faulty = false);
   mod.status = 'active';
  
   closeDispatchModal();
-  document.getElementById('dispatch-status').textContent = `✓ Dispatch authorized by ${dispatcherName} — next maintenance due ${fmtDate(mod.nextMaint)}`;
-  renderSidePanel();
-  renderMesh();
-  renderNetworkDetails();
+    render();
+    document.getElementById('dispatch-status').textContent = `✓ Dispatch authorized by ${dispatcherName} — next maintenance due ${fmtDate(mod.nextMaint)}`;
+    showToast('Crew dispatched', `${currentSectionData().incharge} has been assigned to ${mod.code}.`, 'success');
+  }catch(error){
+    showToast('Dispatch failed',error.message,'error');
+  }finally{
+    authorizeButton.disabled = false;
+    authorizeButton.innerHTML = originalLabel;
+  }
 });
  
 /* ===================== NOTIFICATIONS ===================== */
@@ -1635,6 +2275,8 @@ function renderNotifications(){
     const item = document.createElement('div');
     item.className = 'notif-item';
     item.dataset.code = n.code;
+    item.setAttribute('role','button');
+    item.tabIndex = 0;
     const label = n.type === 'fault' ? 'Fault detected' : n.type === 'maintenance' ? 'Maintenance due' : 'Service ongoing';
     item.innerHTML = `
       <div class="notif-top"><span class="notif-type ${n.type}">${label}</span></div>
@@ -1643,6 +2285,7 @@ function renderNotifications(){
     item.addEventListener('click', ()=>{
       setSelection(n.pin, n.ward, n.section, n.code);
     });
+    item.addEventListener('keydown', event=>{ if(event.key==='Enter' || event.key===' '){ event.preventDefault();setSelection(n.pin,n.ward,n.section,n.code); } });
     list.appendChild(item);
   });
 }
@@ -1656,29 +2299,110 @@ function highlightNotifSource(code){
 function wireToggle(id, layerKey, defaultOn){
   const btn = document.getElementById(id);
   let on = defaultOn;
+  btn.setAttribute('role','switch');
+  btn.tabIndex = 0;
   const apply = ()=>{
     btn.classList.toggle('on', on);
+    btn.setAttribute('aria-checked',String(on));
     if(on) map.addLayer(layers[layerKey]); else map.removeLayer(layers[layerKey]);
   };
   apply();
   btn.addEventListener('click', ()=>{ on = !on; apply(); });
+  btn.addEventListener('keydown',event=>{ if(event.key==='Enter' || event.key===' '){ event.preventDefault();on=!on;apply(); } });
 }
 function wireStreamToggle(){
   const btn = document.getElementById('tg-stream');
   const label = document.getElementById('stream-label');
+  btn.setAttribute('role','switch');
+  btn.tabIndex = 0;
   const apply = ()=>{
     btn.classList.toggle('on', streamOn);
+    btn.setAttribute('aria-checked',String(streamOn));
     label.textContent = streamOn ? 'Pause Mesh Stream' : 'Resume Mesh Stream';
     document.getElementById('map').parentElement.classList.toggle('stream-on', streamOn);
   };
   apply();
   btn.addEventListener('click', ()=>{ streamOn = !streamOn; apply(); });
+  btn.addEventListener('keydown',event=>{ if(event.key==='Enter' || event.key===' '){ event.preventDefault();streamOn=!streamOn;apply(); } });
 }
  
 /* ===================== MAINTENANCE PAGE ===================== */
 const INCIDENT_LABELS = ['Transformer Phase Breakdown','Optical Ground Wire Severed','Substation Ring Feed Failure','Voltage Sag Detected','Line Insulation Fault','Feeder Overcurrent Trip','Busbar Contact Wear','Relay Coordination Alarm'];
+const WORK_ORDER_STEPS = ['dispatched','en_route','on_site','completed'];
+const WORK_ORDER_LABELS = {dispatched:'Dispatched',en_route:'En route',on_site:'On site',completed:'Completed'};
 let lpState = { pin:null, ward:null, section:null, tab:'overdue' };
 let lpInitialized = false;
+
+function populateTechnicians(){
+  const select = document.getElementById('wo-tech');
+  if(!select) return;
+  const current = select.value;
+  const available = backendState.engineers.filter(engineer=>engineer.status !== 'Off Duty');
+  select.innerHTML = '<option value="">Select available technician</option>' + available.map(engineer=>
+    `<option value="${engineer.name}">${engineer.name} · ${engineer.specialization} (${engineer.status})</option>`
+  ).join('');
+  if([...select.options].some(option=>option.value===current)) select.value=current;
+}
+
+function prefillWorkOrder(moduleCode, type='Corrective'){
+  document.getElementById('wo-network-id').value = moduleCode;
+  document.getElementById('wo-type').value = type;
+  const date = document.getElementById('wo-date');
+  if(!date.value) date.value = new Date().toISOString().slice(0,10);
+  const select = document.getElementById('wo-tech');
+  if(!select.value && select.options.length>1) select.selectedIndex=1;
+  document.getElementById('wo-notes').focus({preventScroll:true});
+  document.getElementById('wo-network-id').scrollIntoView({behavior:'smooth',block:'center'});
+  showToast('Work order prepared',`${moduleCode} has been loaded into the dispatch form.`,'success');
+}
+
+function renderWorkOrderHistory(){
+  const list = document.getElementById('wo-history-list');
+  const filter = document.getElementById('wo-status-filter')?.value || 'all';
+  const orders = filter === 'all' ? backendState.workOrders : backendState.workOrders.filter(order=>order.status===filter);
+  document.getElementById('wo-history-count').textContent = `${orders.length} order${orders.length===1?'':'s'}`;
+  if(!orders.length){
+    list.innerHTML = `<div class="lp-empty">${backendState.workOrders.length ? 'No work orders match this status' : 'No work orders created yet'}</div>`;
+    return;
+  }
+  list.innerHTML = orders.map(order=>{
+    const currentIndex = Math.max(0,WORK_ORDER_STEPS.indexOf(order.status));
+    const next = WORK_ORDER_STEPS[currentIndex+1];
+    const created = new Date(order.createdAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return `<article class="wo-card">
+      <div class="wo-card-top"><span class="wo-card-id">${order.id}</span><span class="lp-badge ${order.status==='completed'?'active':'blue'}">${WORK_ORDER_LABELS[order.status] || order.status}</span></div>
+      <div class="wo-card-network">${order.networkId}</div>
+      <div class="wo-card-meta">${order.type} · ${order.technician}<br>Scheduled ${order.scheduledDate} · created ${created}</div>
+      <div class="wo-stage" aria-label="Work order progress">${WORK_ORDER_STEPS.map((step,index)=>`<span class="${index<=currentIndex?'done':''}" title="${WORK_ORDER_LABELS[step]}"></span>`).join('')}</div>
+      <div class="wo-card-bottom"><span class="lp-module-sub">${next ? `Next: ${WORK_ORDER_LABELS[next]}` : 'Job closed'}</span><button class="wo-advance" data-order-id="${order.id}" data-next-status="${next || ''}" ${next?'':'disabled'}>${next ? `Mark ${WORK_ORDER_LABELS[next]}` : 'Completed'}</button></div>
+    </article>`;
+  }).join('');
+  list.querySelectorAll('.wo-advance:not(:disabled)').forEach(button=>button.addEventListener('click',()=>advanceWorkOrder(button)));
+}
+
+async function advanceWorkOrder(button){
+  const orderId = button.dataset.orderId;
+  const nextStatus = button.dataset.nextStatus;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Updating…';
+  try{
+    const payload = await apiRequest(`/api/work-orders/${encodeURIComponent(orderId)}`,{
+      method:'PATCH',body:JSON.stringify({status:nextStatus})
+    });
+    const stored = backendState.workOrders.find(order=>order.id===orderId);
+    if(stored) Object.assign(stored,payload.workOrder);
+    if(nextStatus==='completed'){
+      const ctx = findModuleContext(payload.workOrder.networkId);
+      if(ctx){ctx.mod.status='active';ctx.mod.children.forEach(child=>child.faulty=false);ctx.mod.lastMaint=new Date();ctx.mod.nextMaint=new Date(Date.now()+90*86400000);}
+    }
+    renderMaintenancePage();
+    showToast('Work order updated',`${orderId} is now ${WORK_ORDER_LABELS[nextStatus].toLowerCase()}.`,'success');
+  }catch(error){
+    button.disabled=false;button.textContent=original;
+    showToast('Update failed',error.message,'error');
+  }
+}
  
 function lpCurrentSection(){ return DATA[lpState.pin].wards[lpState.ward].sections[lpState.section]; }
  
@@ -1732,6 +2456,10 @@ function lpInitControls(){
     });
   });
   document.getElementById('wo-submit-btn').addEventListener('click', lpSubmitWorkOrder);
+  document.getElementById('wo-status-filter').addEventListener('change',renderWorkOrderHistory);
+  const dateInput = document.getElementById('wo-date');
+  dateInput.min = new Date().toISOString().slice(0,10);
+  dateInput.value = dateInput.min;
 }
  
 function renderMaintenancePage(){
@@ -1750,6 +2478,7 @@ function renderMaintenancePage(){
   renderLpModuleLists();
   renderLpKpis();
   renderLpQueue();
+  renderWorkOrderHistory();
 }
  
 function renderLpSectionInfo(){
@@ -1787,22 +2516,17 @@ function renderLpModuleLists(){
  
   const critEl = document.getElementById('lp-critical-list');
   critEl.innerHTML = criticalMods.length ? criticalMods.map(m=>{
-    const inspecting = m._inspecting;
     return `<div class="lp-module-card critical">
       <div class="lp-module-top"><span class="lp-module-code">${m.code}</span><span class="lp-badge critical">CRITICAL ALARM</span></div>
       <div class="lp-module-meta">
-        <span class="lp-module-sub">${inspecting? 'Inspecting…' : (m.children.filter(c=>c.faulty).length + ' faulty child node(s)')}</span>
-        <button class="lp-btn-outline" data-code="${m.code}">${inspecting ? 'Inspecting' : 'Inspect'}</button>
+        <span class="lp-module-sub">${m.children.filter(c=>c.faulty).length} faulty child node(s)</span>
+        <button class="lp-btn-outline" data-code="${m.code}">Create order</button>
       </div>
     </div>`;
   }).join('') : '<div class="lp-empty">No critical modules in this section</div>';
  
   critEl.querySelectorAll('.lp-btn-outline').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const mod = secData.modules.find(m=>m.code===btn.dataset.code);
-      mod._inspecting = !mod._inspecting;
-      renderLpModuleLists();
-    });
+    btn.addEventListener('click', ()=>prefillWorkOrder(btn.dataset.code,'Emergency'));
   });
  
   const activeEl = document.getElementById('lp-active-modlist');
@@ -1813,20 +2537,19 @@ function renderLpModuleLists(){
       <div class="lp-module-top"><span class="lp-module-code">${m.code}</span><span class="lp-badge active">HEALTH ${health}%</span></div>
       <div class="lp-module-meta">
         <span class="lp-module-sub">${m.children.length} nodes</span>
-        <button class="lp-btn-outline ok" data-code="${m.code}">Select</button>
+        <button class="lp-btn-outline ok" data-code="${m.code}">Schedule</button>
       </div>
     </div>`;
   }).join('') : '<div class="lp-empty">No active modules in this section</div>';
  
   activeEl.querySelectorAll('.lp-btn-outline').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.getElementById('wo-network-id').value = btn.dataset.code;
-    });
+    btn.addEventListener('click', ()=>prefillWorkOrder(btn.dataset.code,'Inspection'));
   });
 }
  
 function lpAggregateAll(){
   const fault = [], maint = [], crews = [];
+  const orderedNetworks = new Set(backendState.workOrders.map(order=>order.networkId));
   Object.entries(DATA).forEach(([pin, pinData])=>{
     Object.entries(pinData.wards).forEach(([ward, wardData])=>{
       Object.entries(wardData.sections).forEach(([section, secData])=>{
@@ -1836,7 +2559,7 @@ function lpAggregateAll(){
           if(m.status === 'fault'){ fault.push(ctx); sectionHasIssue = true; }
           if(m.status === 'maintenance'){ maint.push(ctx); sectionHasIssue = true; }
         });
-        crews.push({ pin, pinArea:pinData.area, ward, section, secData, dispatched: sectionHasIssue });
+        crews.push({ pin, pinArea:pinData.area, ward, section, secData, dispatched: sectionHasIssue || secData.modules.some(m=>orderedNetworks.has(m.code)) });
       });
     });
   });
@@ -1923,12 +2646,12 @@ function renderLpQueue(){
   listEl.querySelectorAll('.lp-btn-outline').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       lpSetSelection(btn.dataset.pin, btn.dataset.ward, btn.dataset.section);
-      if(btn.dataset.code){ document.getElementById('wo-network-id').value = btn.dataset.code; }
+      if(btn.dataset.code){ prefillWorkOrder(btn.dataset.code,lpState.tab==='overdue'?'Emergency':'Preventive'); }
     });
   });
 }
  
-function lpSubmitWorkOrder(){
+async function lpSubmitWorkOrder(){
   const networkId = document.getElementById('wo-network-id').value.trim();
   const type = document.getElementById('wo-type').value;
   const date = document.getElementById('wo-date').value;
@@ -1940,13 +2663,42 @@ function lpSubmitWorkOrder(){
     msgEl.textContent = '✕ Please fill all required fields (marked *) before dispatching.';
     return;
   }
-  msgEl.className = 'lp-form-msg ok';
-  msgEl.textContent = `✓ Work order authorized for ${networkId} — ${type} scheduled ${date}, assigned to ${tech}.`;
-  document.getElementById('wo-network-id').value = '';
-  document.getElementById('wo-type').value = '';
-  document.getElementById('wo-date').value = '';
-  document.getElementById('wo-tech').value = '';
-  document.getElementById('wo-notes').value = '';
+  if(!findModuleContext(networkId.toUpperCase())){
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = '✕ Select a valid network module from the maintenance lists.';
+    return;
+  }
+  if(date < new Date().toISOString().slice(0,10)){
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = '✕ Scheduled date cannot be in the past.';
+    return;
+  }
+  const button = document.getElementById('wo-submit-btn');
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.textContent = 'Authorizing…';
+  try{
+    const payload = await apiRequest('/api/work-orders',{
+      method:'POST',
+      body:JSON.stringify({networkId,type,scheduledDate:date,technician:tech,notes:document.getElementById('wo-notes').value.trim()})
+    });
+    msgEl.className = 'lp-form-msg ok';
+    msgEl.textContent = `✓ ${payload.workOrder.id} dispatched for ${networkId}.`;
+    backendState.workOrders = [payload.workOrder,...backendState.workOrders.filter(order=>order.id!==payload.workOrder.id)].slice(0,100);
+    document.getElementById('wo-network-id').value = '';
+    document.getElementById('wo-type').value = '';
+    document.getElementById('wo-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('wo-tech').value = '';
+    document.getElementById('wo-notes').value = '';
+    renderMaintenancePage();
+    showToast('Work order created',`${payload.workOrder.id} assigned to ${tech}.`,'success');
+  }catch(error){
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = `✕ ${error.message}`;
+  }finally{
+    button.disabled = false;
+    button.innerHTML = original;
+  }
 }
  
 /* ===================== OVERVIEW & REVIEW PAGE ===================== */
@@ -2093,17 +2845,15 @@ function renderOvReports(){
       </div>
       <div class="lp-module-meta">
         <span class="lp-module-sub">${r.meta}</span>
-        <button class="lp-btn-outline ok" data-title="${r.title}">View Report</button>
+        ${authState.role === 'admin'
+          ? `<button class="lp-btn-outline ok" data-title="${r.title}">View Report</button>`
+          : '<span class="lp-badge blue">ADMIN REPORT</span>'}
       </div>
     </div>`).join('');
   document.querySelectorAll('#ov-reports .lp-btn-outline').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const original = btn.textContent;
-      btn.textContent = 'Opening…';
-      setTimeout(()=>{
-        btn.textContent = original;
-        alert(`${btn.dataset.title}\n\nThis is a sample report preview — wire this up to your reporting backend to render the full document.`);
-      }, 250);
+      window.location.assign('/api/reports/grid-summary');
+      showToast('Report prepared',`${btn.dataset.title} data is downloading.`,'success');
     });
   });
 }
@@ -2148,6 +2898,21 @@ function supAggregateTickets(){
       });
     });
   });
+  backendState.tickets.forEach(ticket=>{
+    const ctx = ticket.networkId ? findModuleContext(ticket.networkId) : null;
+    const fallbackPin = Object.keys(DATA)[0];
+    const fallbackWard = Object.keys(DATA[fallbackPin].wards)[0];
+    const fallbackSection = Object.keys(DATA[fallbackPin].wards[fallbackWard].sections)[0];
+    const pin = ctx?.pin || fallbackPin;
+    const ward = ctx?.ward || fallbackWard;
+    const section = ctx?.section || fallbackSection;
+    const secData = DATA[pin].wards[ward].sections[section];
+    open.unshift({
+      mod:ctx?.mod || {code:ticket.networkId || ticket.id}, pin, pinArea:ctx?.area || DATA[pin].area,
+      ward, section, secData, category:ticket.category, priority:ticket.priority,
+      subject:ticket.subject, createdAt:ticket.createdAt
+    });
+  });
   return {open, progress, resolved};
 }
  
@@ -2186,7 +2951,7 @@ function renderSupQueue(){
   listEl.innerHTML = items.map(t=>{
     const rnd = seededRand(hashSeed(t.mod.code + t.category));
     const hrs = 1 + Math.floor(rnd()*48);
-    const timeLabel = supState.tab === 'resolved' ? `Closed ${Math.floor(rnd()*6)+1}d ago` : `Opened ${hrs}h ago`;
+    const timeLabel = t.createdAt ? new Date(t.createdAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : (supState.tab === 'resolved' ? `Closed ${Math.floor(rnd()*6)+1}d ago` : `Opened ${hrs}h ago`);
     const badgeClass = t.priority === 'Critical' ? 'critical' : t.priority === 'High' ? 'high' : t.priority === 'Medium' ? 'amber' : 'blue';
     const dotColor = badgeClass === 'critical' ? 'var(--lp-critical)' : badgeClass === 'high' ? 'var(--lp-high)' : badgeClass === 'amber' ? 'var(--lp-amber)' : 'var(--lp-blue)';
     return `<div class="lp-queue-row ${rowCls}">
@@ -2196,7 +2961,7 @@ function renderSupQueue(){
         <span class="lp-badge ${badgeClass}">${t.priority.toUpperCase()}</span>
         <span class="lp-queue-time">${timeLabel}</span>
       </div>
-      <div class="lp-queue-desc">${t.mod.code} · assigned to ${t.secData.incharge}</div>
+      <div class="lp-queue-desc">${t.subject || t.mod.code} · assigned to ${t.secData.incharge}</div>
       <div class="lp-queue-bottom">
         <span class="lp-queue-loc">${t.pinArea} · Ward ${t.ward} (${t.section})</span>
         <button class="lp-btn-outline" data-pin="${t.pin}" data-ward="${t.ward}" data-section="${t.section}">View Zone</button>
@@ -2246,7 +3011,7 @@ function supInitControls(){
   document.getElementById('tk-submit-btn').addEventListener('click', supSubmitTicket);
 }
  
-function supSubmitTicket(){
+async function supSubmitTicket(){
   const subject = document.getElementById('tk-subject').value.trim();
   const category = document.getElementById('tk-category').value;
   const priority = document.getElementById('tk-priority').value;
@@ -2258,14 +3023,30 @@ function supSubmitTicket(){
     msgEl.textContent = '✕ Please fill all required fields (marked *) before submitting.';
     return;
   }
-  const ticketId = 'TK-' + (1000 + (hashSeed(subject + priority) % 8999));
-  msgEl.className = 'lp-form-msg ok';
-  msgEl.textContent = `✓ Ticket ${ticketId} submitted — ${priority} priority, routed to zone support desk.`;
-  document.getElementById('tk-subject').value = '';
-  document.getElementById('tk-category').value = '';
-  document.getElementById('tk-priority').value = '';
-  document.getElementById('tk-network').value = '';
-  document.getElementById('tk-desc').value = '';
+  const button = document.getElementById('tk-submit-btn');
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.textContent = 'Submitting…';
+  try{
+    const payload = await apiRequest('/api/tickets',{
+      method:'POST',
+      body:JSON.stringify({subject,category,priority,networkId:document.getElementById('tk-network').value.trim(),description:desc})
+    });
+    msgEl.className = 'lp-form-msg ok';
+    msgEl.textContent = `✓ Ticket ${payload.ticket.id} submitted — ${priority} priority.`;
+    document.getElementById('tk-subject').value = '';
+    document.getElementById('tk-category').value = '';
+    document.getElementById('tk-priority').value = '';
+    document.getElementById('tk-network').value = '';
+    document.getElementById('tk-desc').value = '';
+    showToast('Support ticket opened',`${payload.ticket.id} routed to the zone support desk.`,'success');
+  }catch(error){
+    msgEl.className = 'lp-form-msg err';
+    msgEl.textContent = `✕ ${error.message}`;
+  }finally{
+    button.disabled = false;
+    button.innerHTML = original;
+  }
 }
  
 /* ===================== CLOCK ===================== */
@@ -2280,9 +3061,13 @@ function render(){
   renderSidePanel();
   renderMesh();
   renderNetworkDetails();
+  updateDashboardKpis();
 }
  
+let hasBooted = false;
 function boot(){
+  if(hasBooted) return;
+  hasBooted = true;
   populatePinSelect();
   const firstPin = Object.keys(DATA)[0];
   const firstWard = Object.keys(DATA[firstPin].wards)[0];
@@ -2308,12 +3093,16 @@ function boot(){
  
   lpInitControls();
   supInitControls();
+
+  document.getElementById('demo-fault-btn').addEventListener('click', simulateSelectedFault);
+  connectRealtime();
+  hydrateBackend();
  
   tickClock();
   setInterval(tickClock, 1000);
 }
  
-boot();
+initializeAuthentication();
 </script>
 </body>
 </html>
