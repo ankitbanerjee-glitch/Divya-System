@@ -1,3 +1,12 @@
+# DIVYA System v3.4 changes
+
+## v3.4 Vercel deployment
+
+1. Added Vercel Express deployment support.
+2. Replaced in-memory login sessions with signed, expiring secure cookies.
+3. Replaced persistent Socket.IO connections with six-second authenticated polling.
+4. Added a required production session-signing secret.
+
 # DIVYA System v3.3 changes
 
 ## v3.3 public prototype readiness
