@@ -2,6 +2,7 @@
   "name": "fault-detection-system",
   "version": "3.4.0",
   "description": "DIVYA real-time grid fault monitoring and field-response console",
+  "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
