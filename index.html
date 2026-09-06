@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
 <style>
   :root{
     --bg:#070b10;
@@ -1755,31 +1754,10 @@ async function hydrateBackend(){
 }
 
 function connectRealtime(){
-  if(typeof io !== 'function') return updateConnection(false);
-  const socket = io({timeout:5000});
-  socket.on('connect', ()=>updateConnection(true));
-  socket.on('disconnect', ()=>updateConnection(false));
-  socket.on('fault_event', event=>applyFaultEvent(event));
-  socket.on('fault_acknowledged', event=>{
-    const stored = backendState.activity.find(item=>item.id === event.id);
-    if(stored) Object.assign(stored,event);
-  });
-  socket.on('fault_resolved', event=>applyFaultResolution(event,{silent:true}));
-  socket.on('work_order_created', order=>{
-    backendState.workOrders = [order,...backendState.workOrders.filter(item=>item.id!==order.id)].slice(0,100);
-    backendState.lastEvent = {...order,kind:'work_order'};
-    updateDashboardKpis();
-    if(state.currentPage === 'maintenance') renderMaintenancePage();
-  });
-  socket.on('work_order_updated', order=>{
-    const stored = backendState.workOrders.find(item=>item.id===order.id);
-    if(stored) Object.assign(stored,order); else backendState.workOrders.unshift(order);
-    if(state.currentPage === 'maintenance') renderMaintenancePage();
-  });
-  socket.on('ticket_created', ticket=>{
-    backendState.tickets = [ticket,...backendState.tickets.filter(item=>item.id!==ticket.id)].slice(0,100);
-    if(state.currentPage === 'support') renderSupportPage();
-  });
+  updateConnection(true);
+  window.setInterval(()=>{
+    if(!document.hidden) hydrateBackend();
+  },6000);
 }
 
 async function simulateSelectedFault(){
