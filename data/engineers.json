@@ -1,6 +1,6 @@
 [
-  { "id": 1, "name": "Rahul Sharma", "lat": 22.5726, "lng": 88.3639, "phone": "DEMO-TECH-001", "email": "rahul.sharma@example.invalid", "specialization": "Network", "status": "Available" },
-  { "id": 2, "name": "Amit Verma", "lat": 22.5825, "lng": 88.391, "phone": "DEMO-TECH-002", "email": "amit.verma@example.invalid", "specialization": "Maintenance", "status": "On Field" },
-  { "id": 3, "name": "Priya Patel", "lat": 22.5638, "lng": 88.3494, "phone": "DEMO-TECH-003", "email": "priya.patel@example.invalid", "specialization": "Testing", "status": "Available" },
-  { "id": 4, "name": "Vikram Singh", "lat": 22.595, "lng": 88.405, "phone": "DEMO-TECH-004", "email": "vikram.singh@example.invalid", "specialization": "Installation", "status": "Off Duty" }
+  { "id": 1, "name": "Rahul Sharma", "lat": 0.011, "lng": 0.012, "phone": "DEMO-TECH-001", "email": "rahul.sharma@example.invalid", "specialization": "Network", "status": "Available" },
+  { "id": 2, "name": "Amit Verma", "lat": 0.021, "lng": 0.011, "phone": "DEMO-TECH-002", "email": "amit.verma@example.invalid", "specialization": "Maintenance", "status": "On Field" },
+  { "id": 3, "name": "Priya Patel", "lat": 0.031, "lng": 0.021, "phone": "DEMO-TECH-003", "email": "priya.patel@example.invalid", "specialization": "Testing", "status": "Available" },
+  { "id": 4, "name": "Vikram Singh", "lat": 0.041, "lng": 0.031, "phone": "DEMO-TECH-004", "email": "vikram.singh@example.invalid", "specialization": "Installation", "status": "Off Duty" }
 ]
