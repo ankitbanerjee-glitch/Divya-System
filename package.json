@@ -1,15 +1,17 @@
 {
   "name": "fault-detection-system",
-  "version": "1.0.0",
-  "description": "Industrial IoT dashboard for power grid fault detection",
+  "version": "3.3.0",
+  "description": "DIVYA real-time grid fault monitoring and field-response console",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "check": "node --check server.js"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
+    "mongodb": "^6.19.0",
     "socket.io": "^4.7.2"
   }
 }
