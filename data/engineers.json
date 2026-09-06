@@ -1,6 +1,6 @@
 [
-  { "id": 1, "name": "Rahul Sharma", "lat": 22.5726, "lng": 88.3639, "phone": "+91 9876543210", "email": "rahul.sharma@powergrid.com", "specialization": "Network" },
-  { "id": 2, "name": "Amit Verma", "lat": 22.5825, "lng": 88.3910, "phone": "+91 9876543211", "email": "amit.verma@powergrid.com", "specialization": "Maintenance" },
-  { "id": 3, "name": "Priya Patel", "lat": 22.5638, "lng": 88.3494, "phone": "+91 9876543212", "email": "priya.patel@powergrid.com", "specialization": "Testing" },
-  { "id": 4, "name": "Vikram Singh", "lat": 22.5950, "lng": 88.4050, "phone": "+91 9876543213", "email": "vikram.singh@powergrid.com", "specialization": "Installation" }
+  { "id": 1, "name": "Rahul Sharma", "lat": 22.5726, "lng": 88.3639, "phone": "DEMO-TECH-001", "email": "rahul.sharma@example.invalid", "specialization": "Network", "status": "Available" },
+  { "id": 2, "name": "Amit Verma", "lat": 22.5825, "lng": 88.391, "phone": "DEMO-TECH-002", "email": "amit.verma@example.invalid", "specialization": "Maintenance", "status": "On Field" },
+  { "id": 3, "name": "Priya Patel", "lat": 22.5638, "lng": 88.3494, "phone": "DEMO-TECH-003", "email": "priya.patel@example.invalid", "specialization": "Testing", "status": "Available" },
+  { "id": 4, "name": "Vikram Singh", "lat": 22.595, "lng": 88.405, "phone": "DEMO-TECH-004", "email": "vikram.singh@example.invalid", "specialization": "Installation", "status": "Off Duty" }
 ]
