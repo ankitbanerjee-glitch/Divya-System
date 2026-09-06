@@ -43,7 +43,9 @@ Run `setup-mongodb.ps1` to choose private credentials locally, or set the four l
 
 ## Public prototype deployment
 
-The included `render.yaml` configures DIVYA as a Render Node.js web service with a public health check. Add `MONGODB_URI` and four private login values in the hosting dashboard; never commit them to GitHub. Production startup intentionally fails if any required value is missing or either original demonstration password is used.
+DIVYA supports Vercel's Express runtime. Add `MONGODB_URI`, the four private login values, and a long random `DIVYA_SESSION_SECRET` in the Vercel project settings; never commit them to GitHub. The hosted dashboard uses secure signed cookies and refreshes MongoDB-backed operational data automatically every six seconds.
+
+The included `render.yaml` remains available for a traditional always-on Node.js deployment. Production startup intentionally fails if any required value is missing or either original demonstration password is used.
 
 ## Report a registered device fault
 
