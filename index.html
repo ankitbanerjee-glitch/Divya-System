@@ -684,20 +684,138 @@
   }
   @media(max-width:430px){.brand #page-title-suffix{display:none}.system-overview{grid-template-columns:1fr}.overview-chip{min-height:64px}.legend{display:none}}
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+  /* Human-centred operations UI — restrained, practical, and data-first */
+  :root{
+    --bg:#101419;--panel:#171c22;--panel-2:#1c2229;
+    --border:#303842;--border-soft:#252c34;
+    --text:#f3f5f7;--text-dim:#b5bdc7;--text-faint:#7f8b98;
+    --cyan:#5bb8a9;--cyan-dim:rgba(91,184,169,.34);
+    --active:#58b98b;--fault:#e46c76;--maint:#d5a552;--service:#6ea6d9;
+  }
+  body{
+    background:#101419;background-image:none;
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  .topbar{
+    min-height:64px;padding:10px 20px;background:#14191f;
+    border-bottom:1px solid #2b323b;box-shadow:none;backdrop-filter:none;
+  }
+  .brand .mark,.sidebar-head .mark,.login-brand .mark{
+    width:36px;height:36px;border-radius:7px;background:#e9eef2;color:#182028;
+    box-shadow:none;font-size:12px;letter-spacing:-.02em;
+  }
+  .brand h1{font:650 16px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.01em;}
+  .brand .sub{font:500 11px/1.35 Inter,system-ui,sans-serif;letter-spacing:0;color:#8995a2;text-transform:none;}
+  #page-title-suffix{color:#97a2ad;font-weight:500;}
+  .hamburger{border-radius:7px;background:#1c2229;border-color:#343d47;}
+  .clock{font-family:Inter,system-ui,sans-serif;font-size:12px;letter-spacing:0;color:#9aa5b1;}
+  .connection-pill{border-radius:7px;background:#1a2026;font:600 11px Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;}
+  .connection-pill .live-dot,.connection-pill.connected .live-dot{box-shadow:none;animation:none;}
+  .account-chip{border-radius:8px;background:#1a2026;}
+  .account-role{font:600 10px Inter,system-ui,sans-serif;letter-spacing:0;text-transform:capitalize;color:#8fa7a1;}
+  .command-button{font-family:Inter,system-ui,sans-serif;border-radius:7px;transform:none;}
+  .command-button:hover{transform:none;}
+  .sidebar{background:#14191f;backdrop-filter:none;box-shadow:14px 0 36px rgba(0,0,0,.25);}
+  .sidebar-head{padding:18px;border-color:#2b323b;}
+  .sidebar-head h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.01em;}
+  .sidebar-head .sub{font-family:Inter,system-ui,sans-serif;color:#8995a2;}
+  .sidebar-nav{padding:14px 10px;gap:2px;}
+  .nav-item{border:0;border-left:3px solid transparent;border-radius:5px;padding:11px 12px;font-size:13px;}
+  .nav-item .ic{font-size:0;width:12px;}
+  .nav-item .ic::after{content:"";display:block;width:6px;height:6px;border-radius:50%;background:#687481;}
+  .nav-item.active{background:#20272e;border-left-color:#66b5a8;box-shadow:none;}
+  .nav-item.active .ic::after{background:#66b5a8;}
+  .sidebar-foot{font:500 11px/1.55 Inter,system-ui,sans-serif;color:#75818d;}
+  .system-overview{gap:0;padding:20px 22px 0;}
+  .overview-chip{
+    min-height:74px;padding:12px 18px;background:#171c22;border-color:#303842;
+    border-radius:0;box-shadow:none;border-right-width:0;
+  }
+  .overview-chip:first-child{border-radius:9px 0 0 9px;}
+  .overview-chip:last-child{border-radius:0 9px 9px 0;border-right-width:1px;}
+  .overview-chip .eyebrow{font:600 11px Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:#929daa;}
+  .overview-chip .metric{font:650 22px Inter,system-ui,sans-serif;margin-top:7px;}
+  .overview-chip .detail{font:500 11px Inter,system-ui,sans-serif;color:#7e8995;}
+  .selectors{background:#171c22;border-color:#303842;border-radius:9px;backdrop-filter:none;}
+  .field label,.lp-field label,.lp-form-field label{font-family:Inter,system-ui,sans-serif;font-size:11px;letter-spacing:0;text-transform:none;font-weight:600;}
+  select,.lp-select,.lp-input,.lp-textarea{border-radius:6px!important;background:#11161b!important;}
+  .panel,.lp-card{
+    background:#171c22!important;border-color:#303842;border-radius:9px!important;
+    box-shadow:none!important;backdrop-filter:none;
+  }
+  .panel-head,.lp-card-head{background:#1a2026;border-color:#2d353e;}
+  .panel-head h2,.lp-card-head h3{
+    font-family:Inter,system-ui,sans-serif;font-size:12px;letter-spacing:0;text-transform:none;color:#cbd2d9;
+  }
+  .panel-head .code-tag,.kv-label,.kv-value,.incharge-meta,.net-group-title,.mod-item,.mod-status,.notif-type,.notif-code,.notif-meta,.telemetry-title,.telemetry-cell .phase,.telemetry-foot{
+    font-family:Inter,system-ui,sans-serif;letter-spacing:0;
+  }
+  .mesh-panel::after{display:none;}
+  #map{filter:saturate(.72) contrast(1.02);}
+  .toggle-btn,.legend-item{font-family:Inter,system-ui,sans-serif;letter-spacing:0;}
+  .toggle-btn.on .sw,.toggle-btn.stream-btn.on .sw{box-shadow:none;}
+  .mod-item.selected{box-shadow:none;background:#20272e;}
+  .dispatch-btn,.lp-submit-btn{
+    background:#5ba99c!important;color:#08120f;border:1px solid #70b8ac!important;
+    border-radius:6px!important;font-family:Inter,system-ui,sans-serif;font-weight:700;letter-spacing:0;text-transform:none;
+  }
+  .dispatch-btn:hover,.lp-submit-btn:hover{background:#6eb8ac!important;}
+  .light-page{
+    --lp-bg:#101419;--lp-card:#171c22;--lp-border:#303842;--lp-border-soft:#252c34;
+    --lp-text:#f3f5f7;--lp-dim:#aeb7c1;--lp-faint:#7e8995;
+    background:#101419;padding:22px;
+  }
+  .lp-filterbar{background:#14191f!important;}
+  .lp-pill{font-family:Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;border-radius:5px;background:#1d242b;}
+  .lp-pill:not(.live){display:none;}
+  .lp-pill.live{color:#8fc8a9;background:#17251f;border-color:#294f3c;}
+  .lp-pill .dot{box-shadow:none;animation:none;}
+  .lp-badge{font-family:Inter,system-ui,sans-serif;letter-spacing:0;text-transform:capitalize;border-radius:5px;}
+  .lp-kpi-row{gap:0;}
+  .lp-kpi-card{border-radius:0!important;border-right-width:0;padding:16px 18px;}
+  .lp-kpi-card:first-child{border-radius:9px 0 0 9px!important;}
+  .lp-kpi-card:last-child{border-radius:0 9px 9px 0!important;border-right-width:1px;}
+  .lp-kpi-icon{display:none;}
+  .lp-kpi-title{font-size:11px;color:#929daa;text-transform:none;}
+  .lp-kpi-value{font:650 24px Inter,system-ui,sans-serif;}
+  .lp-module-code,.lp-queue-code,.lp-queue-time,.lp-queue-loc,.lp-module-sub,.lp-form-msg,.lp-empty,.wo-card-id,.wo-card-meta,.wo-advance{
+    font-family:Inter,system-ui,sans-serif;letter-spacing:0;
+  }
+  .lp-tabs{background:#11161b;padding:3px;border-radius:7px;}
+  .lp-tab{font-family:Inter,system-ui,sans-serif;border-radius:5px;}
+  .lp-tab.active{background:#252c34;color:#f3f5f7;box-shadow:none;}
+  .lp-queue-row,.lp-module-card,.wo-card{background:#14191f;border-radius:7px;}
+  .lp-protocol-bar{border-left:3px solid #5b788c!important;color:#aeb7c1;}
+  .toast{border-radius:7px;background:#1a2026;box-shadow:0 12px 30px rgba(0,0,0,.28);}
+  .toast strong,.toast span{font-family:Inter,system-ui,sans-serif;letter-spacing:0;}
+  .login-visual{background:#171c22;}
+  .login-visual::before{display:none;}
+  .login-panel{background:#101419;}
+  .login-card{border-radius:10px;background:#171c22;box-shadow:none;border-color:#303842;}
+  .login-brand{font-family:Inter,system-ui,sans-serif;letter-spacing:0;}
+  .login-copy h2{font-family:Inter,system-ui,sans-serif;font-size:clamp(34px,4vw,55px);letter-spacing:-.035em;}
+  .login-signal,.login-card .eyebrow,.login-field label{font-family:Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;}
+  .login-submit{border-radius:6px;background:#5ba99c;color:#08120f;}
+  .role-option.active{box-shadow:none;background:#24312f;}
+  @media(max-width:720px){
+    .system-overview{gap:8px}.overview-chip,.overview-chip:first-child,.overview-chip:last-child{border-radius:8px;border-right-width:1px}
+    .lp-kpi-row{gap:8px}.lp-kpi-card,.lp-kpi-card:first-child,.lp-kpi-card:last-child{border-radius:8px!important;border-right-width:1px}
+  }
 </style>
 </head>
 <body>
 <section id="login-screen" aria-label="DIVYA secure login">
   <div class="login-visual">
     <div class="login-brand"><span class="mark">DS</span><span>DIVYA SYSTEM</span></div>
-    <div class="login-copy"><h2>Grid intelligence.<br><span>Controlled access.</span></h2><p>Secure monitoring and field-response access for Kolkata's low-voltage distribution network.</p></div>
-    <div class="login-signal"><span class="live-dot"></span>Control service ready</div>
+    <div class="login-copy"><h2>Kolkata distribution network operations.</h2><p>Monitor feeder health, review faults and coordinate field maintenance from one workspace.</p></div>
+    <div class="login-signal"><span class="live-dot"></span>Service available</div>
   </div>
   <div class="login-panel">
     <form class="login-card" id="login-form">
-      <div class="eyebrow">Secure console</div>
-      <h1>Welcome back</h1>
-      <p>Choose your access type and sign in to continue.</p>
+      <div class="eyebrow">DIVYA Grid Operations</div>
+      <h1>Sign in</h1>
+      <p>Select your role and enter the credentials issued by your administrator.</p>
       <div class="role-switch" role="group" aria-label="Access type">
         <button class="role-option active" type="button" data-login-role="user">User</button>
         <button class="role-option" type="button" data-login-role="admin">Admin</button>
@@ -724,10 +842,10 @@
   <div class="sidebar-nav">
     <button class="nav-item active" data-page="dashboard"><span class="ic">&#9635;</span>Dashboard</button>
     <button class="nav-item admin-only" data-page="maintenance"><span class="ic">&#9881;</span>Maintenance</button>
-    <button class="nav-item" data-page="overview"><span class="ic">&#9776;</span>Overview &amp; Review</button>
-    <button class="nav-item" data-page="support"><span class="ic">&#9742;</span>Support System</button>
+    <button class="nav-item" data-page="overview"><span class="ic">&#9776;</span>Reports</button>
+    <button class="nav-item" data-page="support"><span class="ic">&#9742;</span>Support</button>
   </div>
-  <div class="sidebar-foot">Kolkata Grid &amp; Feeder Network<br>Command Console · v3.0</div>
+  <div class="sidebar-foot">Kolkata distribution network<br>Operations console · v3.4</div>
 </nav>
  
 <div class="topbar">
@@ -736,7 +854,7 @@
     <div class="mark">DS</div>
     <div>
       <h1>DIVYA SYSTEM <span id="page-title-suffix">— Dashboard</span></h1>
-      <div class="sub">GRID &amp; FEEDER MONITORING · KOLKATA</div>
+      <div class="sub">Kolkata distribution network</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -947,7 +1065,7 @@
     <div class="lp-card lp-filterbar">
       <div class="lp-badges">
         <span class="lp-pill">&#128246; KOLKATA GRID TELEMETRY</span>
-        <span class="lp-pill live"><span class="dot"></span>LIVE DISPATCH</span>
+        <span class="lp-pill live"><span class="dot"></span>Connected</span>
       </div>
       <div class="lp-field">
         <label>Location — PIN</label>
@@ -995,11 +1113,11 @@
  
       <div class="lp-stack">
         <div class="lp-card">
-          <div class="lp-card-head"><h3>Multi-Critical Network Modules — Urgent View</h3><span class="lp-badge critical" id="lp-critical-count">0 Faults</span></div>
+          <div class="lp-card-head"><h3>Modules requiring attention</h3><span class="lp-badge critical" id="lp-critical-count">0 Faults</span></div>
           <div class="lp-card-body" id="lp-critical-list"></div>
         </div>
         <div class="lp-card">
-          <div class="lp-card-head"><h3>Active Operational Networks — Normal Health</h3><span class="lp-badge active" id="lp-active-count">0 Healthy</span></div>
+          <div class="lp-card-head"><h3>Healthy modules</h3><span class="lp-badge active" id="lp-active-count">0 Healthy</span></div>
           <div class="lp-card-body" id="lp-active-modlist"></div>
         </div>
       </div>
@@ -1010,11 +1128,11 @@
     <!-- Dispatch Management & Work Orders -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
       <div>
-        <span class="lp-pill">&#128225; TELEMETRY DISPATCH CONSOLE // KOLKATA GRID</span>
-        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:23px;margin:10px 0 4px;">Dispatch Management &amp; Work Orders</h1>
-        <div style="font-size:12.5px;color:var(--lp-dim);">Monitor active fault incidents, review upcoming maintenance windows, and assign emergency repair units.</div>
+        <span class="lp-pill">Kolkata grid operations</span>
+        <h1 style="font-family:'Inter',sans-serif;font-size:23px;margin:10px 0 4px;">Dispatch and work orders</h1>
+        <div style="font-size:12.5px;color:var(--lp-dim);">Review incidents, schedule maintenance and assign field teams.</div>
       </div>
-      <span class="lp-pill live"><span class="dot"></span>LIVE DISPATCH STREAM ACTIVE</span>
+      <span class="lp-pill live"><span class="dot"></span>Dispatch connected</span>
     </div>
  
     <div class="lp-kpi-row">
@@ -1061,9 +1179,9 @@
         <div class="lp-card-head">
           <div>
             <h3 style="margin-bottom:3px;">Dispatch Management &amp; Work Order Form</h3>
-            <div style="font-size:11px;color:var(--lp-faint);">Issue formal telemetry tickets to field maintenance squads</div>
+            <div style="font-size:11px;color:var(--lp-faint);">Create and assign a field maintenance job</div>
           </div>
-          <span class="lp-badge blue">ID: WO-CREATE</span>
+          <span class="lp-badge blue">New order</span>
         </div>
         <div class="lp-card-body">
           <div class="lp-form-field">
@@ -1133,7 +1251,7 @@
 
     <div class="lp-card lp-protocol-bar" style="margin-top:16px;">
       <span>&#9432;</span>
-      <span><b>DIVYA Maintenance Protocol:</b> Priority level 1 alerts must be acknowledged within 15 minutes. Dispatch confirmations notify ward engineers and generate live GIS tracking coordinates.</span>
+      <span><b>Response standard:</b> Priority 1 alerts should be acknowledged within 15 minutes. Assigned ward engineers receive the work order immediately.</span>
     </div>
  
   </div>
@@ -1145,15 +1263,15 @@
     <div class="lp-card lp-filterbar">
       <div class="lp-badges">
         <span class="lp-pill">&#128202; KOLKATA GRID TELEMETRY — NETWORK OVERVIEW</span>
-        <span class="lp-pill live"><span class="dot"></span>LIVE ROLLUP</span>
+        <span class="lp-pill live"><span class="dot"></span>Data current</span>
       </div>
       <div style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--lp-dim);" id="ov-updated">—</div>
     </div>
  
     <div style="margin-bottom:18px;">
-      <span class="lp-pill">&#128200; SYSTEM-WIDE ANALYTICS</span>
-      <h1 style="font-family:'Space Grotesk',sans-serif;font-size:23px;margin:10px 0 4px;">Overview &amp; Review</h1>
-      <div style="font-size:12.5px;color:var(--lp-dim);">Rollup uptime, fault trends and zone-by-zone health across all 8 Kolkata PIN zones.</div>
+      <span class="lp-pill">Network reporting</span>
+      <h1 style="font-family:'Inter',sans-serif;font-size:23px;margin:10px 0 4px;">Network reports</h1>
+      <div style="font-size:12.5px;color:var(--lp-dim);">Uptime, incident trends and health by service area.</div>
     </div>
  
     <div class="lp-kpi-row" style="grid-template-columns:repeat(4,1fr);">
@@ -1235,8 +1353,8 @@
  
     <div style="margin-bottom:18px;">
       <span class="lp-pill">&#128172; FIELD SUPPORT &amp; ESCALATION</span>
-      <h1 style="font-family:'Space Grotesk',sans-serif;font-size:23px;margin:10px 0 4px;">Support System</h1>
-      <div style="font-size:12.5px;color:var(--lp-dim);">Field-team directory, ticketing and escalation workflow for on-ground support requests.</div>
+      <h1 style="font-family:'Inter',sans-serif;font-size:23px;margin:10px 0 4px;">Support</h1>
+      <div style="font-size:12.5px;color:var(--lp-dim);">Raise an issue, follow its status or contact the responsible field team.</div>
     </div>
  
     <div class="lp-kpi-row">
@@ -1279,7 +1397,7 @@
       <div class="lp-card">
         <div class="lp-card-head">
           <div><h3 style="margin-bottom:3px;">Raise Support Ticket</h3><div style="font-size:11px;color:var(--lp-faint);">Submit an on-ground support or escalation request</div></div>
-          <span class="lp-badge blue">ID: TK-CREATE</span>
+          <span class="lp-badge blue">New ticket</span>
         </div>
         <div class="lp-card-body">
           <div class="lp-form-field">
@@ -1333,7 +1451,7 @@
  
     <div class="lp-card lp-protocol-bar" style="margin-top:16px;">
       <span>&#9432;</span>
-      <span><b>DIVYA Support Protocol:</b> Critical-priority tickets are auto-escalated to zone engineers and must receive first response within 30 minutes.</span>
+      <span><b>Support standard:</b> Critical tickets are escalated to the zone engineer with a 30-minute initial response target.</span>
     </div>
  
   </div>
@@ -1786,7 +1904,7 @@ const hamburgerBtn = document.getElementById('hamburger-btn');
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const pageTitleSuffix = document.getElementById('page-title-suffix');
-const PAGE_LABELS = { dashboard:'Dashboard', maintenance:'Maintenance', overview:'Overview & Review', support:'Support System' };
+const PAGE_LABELS = { dashboard:'Dashboard', maintenance:'Maintenance', overview:'Reports', support:'Support' };
  
 function openSidebar(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); hamburgerBtn.setAttribute('aria-expanded','true'); }
 function closeSidebar(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); hamburgerBtn.setAttribute('aria-expanded','false'); }
