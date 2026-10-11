@@ -2,11 +2,26 @@
 
 DIVYA is an IoT-enabled fault monitoring and field-response prototype for overhead low-voltage distribution grids. The project combines a real-time operational dashboard with a Node.js service that can receive device alerts, record operational activity, and notify connected control-room screens.
 
+## Where do I work?
+
+| Task | Files | What belongs here |
+| --- | --- | --- |
+| Frontend / UI | [`frontend/index.html`](frontend/index.html) | Dashboard markup, styles, browser logic and API calls; currently one file |
+| Backend / API / authentication | [`backend/server.js`](backend/server.js) | Express routes, signed-cookie sessions, permissions, MongoDB and runtime persistence |
+| Seed and fallback data | [`data/`](data/) | Registered modules, engineers and JSON runtime state |
+| Setup tooling | [`scripts/setup-mongodb.ps1`](scripts/setup-mongodb.ps1) | Windows MongoDB and local environment setup |
+| Documentation | [`docs/`](docs/) | Project PDF, screenshots and the [file guide](docs/FILE-GUIDE.md) |
+| Dependencies / deployment | Root `package*.json`, `vercel.json`, `render.yaml` | npm commands and hosting configuration |
+| Local configuration | Root `.env` using [`.env.example`](.env.example) | Private credentials; `.env` stays out of Git |
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and pull-request workflow.
+Root `server.js` is a small deployment entry point; edit `backend/server.js` for application behavior. Run all npm commands from the repository root.
+
 ## What is included
 
 - Live grid dashboard with PIN, feeder, section, parent-module, and child-node views
 - Leaflet-based topology and satellite map layers
-- Socket.IO fault updates without page refresh
+- Dashboard polling for operational updates without page refresh
 - Registered-node validation for hardware fault reports
 - Persistent fault activity, work orders, and support tickets
 - Nearest-available-engineer recommendation for registered nodes
@@ -27,7 +42,7 @@ Open `http://localhost:3000`.
 On Windows, open PowerShell inside the project folder and run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup-mongodb.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-mongodb.ps1
 ```
 
 Enter the password created for the `divya_app` Atlas user when prompted. The script keeps the password hidden, URL-encodes it, creates the private `.env` file, installs dependencies, and starts DIVYA. The `.env` file is excluded from Git and from distributable ZIP files.
@@ -39,7 +54,7 @@ When connected, the terminal prints `MongoDB connected: divya_system` and `Data 
 - User — monitoring, network status, overview, alerts, and support tickets
 - Admin — full monitoring plus fault simulation, repair, dispatch, maintenance, work-order control, and reports
 
-Run `setup-mongodb.ps1` to choose private credentials locally, or set the four login environment variables shown in `.env.example`. Never publish working passwords.
+Run `scripts/setup-mongodb.ps1` to choose private credentials locally, or set the four login environment variables shown in `.env.example`. Never publish working passwords.
 
 ## Public prototype deployment
 
